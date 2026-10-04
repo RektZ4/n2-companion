@@ -1,0 +1,13 @@
+{
+  "name": "n2-companion",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "A context-first JLPT study extension for kanji-background learners.",
+  "scripts": {
+    "test": "node --test",
+    "check": "node scripts/validate-extension.js"
+  },
+  "engines": { "node": ">=20" },
+  "license": "MIT"
+}

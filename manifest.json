@@ -1,0 +1,36 @@
+{
+  "manifest_version": 3,
+  "name": "N2 Companion",
+  "version": "0.1.0",
+  "description": "Turn Japanese encountered online into contextual, reading-first JLPT flashcards.",
+  "permissions": ["storage", "contextMenus", "activeTab"],
+  "host_permissions": ["https://jisho.org/*"],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_title": "N2 Companion",
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "commands": {
+    "lookup-selection": {
+      "suggested_key": { "default": "Alt+J" },
+      "description": "Look up selected Japanese text"
+    }
+  },
+  "options_page": "settings.html",
+  "web_accessible_resources": [
+    {
+      "resources": ["icons/icon.svg"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}

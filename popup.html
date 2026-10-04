@@ -1,0 +1,11 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>N2 Companion</title><link rel="stylesheet" href="styles.css"></head><body>
+<main class="app">
+  <header class="header"><div><p class="eyebrow">READ · CAPTURE · REMEMBER</p><h1>N2 Companion</h1></div><button id="settings" class="icon-button" title="Settings">⚙</button></header>
+  <section class="countdown"><div><strong id="days">—</strong><br><span>days to JLPT</span></div><div style="text-align:right"><strong id="examDate">—</strong><br><span>exam day</span></div></section>
+  <section class="stats"><div class="stat"><strong id="due">0</strong><span>due now</span></div><div class="stat"><strong id="total">0</strong><span>saved</span></div><div class="stat"><strong id="accuracy">0%</strong><span>retention</span></div></section>
+  <section class="goal"><div class="goal-line"><span>Today’s reviews</span><b id="goalText">0 / 20</b></div><div class="track"><div id="goalBar" class="bar" style="width:0"></div></div></section>
+  <button id="review" class="primary">Review due cards</button>
+  <form id="lookupForm" class="lookup"><input id="lookupInput" placeholder="Paste Japanese from a PDF…" maxlength="100" required><button type="submit">Look up</button></form><div id="lookupResult"></div>
+  <h2 class="section-title">Recently captured</h2><ul id="recent" class="recent"></ul>
+  <p class="hint">Select Japanese on a page, then click <b>辞</b> or press Alt+J.</p>
+</main><script type="module" src="popup.js"></script></body></html>

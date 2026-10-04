@@ -1,0 +1,62 @@
+import { cleanSelection, containsJapanese } from "./lib/japanese.js";
+import { saveCard } from "./lib/storage.js";
+import { getChineseBackgroundCue } from "./lib/cognates.js";
+
+const MENU_ID = "n2-companion-lookup";
+const lookupCache = new Map();
+
+chrome.runtime.onInstalled.addListener(() => {
+  chrome.contextMenus.removeAll(() => chrome.contextMenus.create({
+    id: MENU_ID,
+    title: "Look up Japanese: %s",
+    contexts: ["selection"]
+  }));
+});
+
+chrome.contextMenus.onClicked.addListener((info, tab) => {
+  if (info.menuItemId !== MENU_ID || !tab?.id) return;
+  chrome.tabs.sendMessage(tab.id, { type: "N2_LOOKUP_TEXT", text: info.selectionText }).catch(() => {});
+});
+
+chrome.commands.onCommand.addListener(async (command) => {
+  if (command !== "lookup-selection") return;
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (tab?.id) chrome.tabs.sendMessage(tab.id, { type: "N2_LOOKUP_CURRENT_SELECTION" }).catch(() => {});
+});
+
+chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+  if (message.type === "N2_DICTIONARY_LOOKUP") {
+    lookup(message.text).then((entries) => sendResponse({ ok: true, entries })).catch((error) => sendResponse({ ok: false, error: error.message }));
+    return true;
+  }
+  if (message.type === "N2_SAVE_CARD") {
+    saveCard(message.card).then((result) => sendResponse({ ok: true, ...result })).catch((error) => sendResponse({ ok: false, error: error.message }));
+    return true;
+  }
+  return false;
+});
+
+async function lookup(rawText) {
+  const text = cleanSelection(rawText);
+  if (!text || !containsJapanese(text)) throw new Error("Select Japanese text first.");
+  if (lookupCache.has(text)) return lookupCache.get(text);
+
+  const response = await fetch(`https://jisho.org/api/v1/search/words?keyword=${encodeURIComponent(text)}`);
+  if (!response.ok) throw new Error(`Dictionary request failed (${response.status}).`);
+  const payload = await response.json();
+  const entries = payload.data.slice(0, 5).map((item) => ({
+    slug: item.slug,
+    term: item.japanese?.[0]?.word || item.slug,
+    reading: item.japanese?.[0]?.reading || "",
+    jlpt: item.jlpt || [],
+    common: Boolean(item.is_common),
+    chineseCue: getChineseBackgroundCue(item.japanese?.[0]?.word || item.slug),
+    senses: (item.senses || []).slice(0, 4).map((sense) => ({
+      meanings: sense.english_definitions || [],
+      partsOfSpeech: sense.parts_of_speech || []
+    }))
+  }));
+  lookupCache.set(text, entries);
+  if (lookupCache.size > 100) lookupCache.delete(lookupCache.keys().next().value);
+  return entries;
+}
