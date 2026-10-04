@@ -4,8 +4,11 @@ import { fileURLToPath } from "node:url";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const output = resolve(root, "vendor/tesseract");
+const wanakanaOutput = resolve(root, "vendor/wanakana");
 await rm(output, { recursive: true, force: true });
+await rm(wanakanaOutput, { recursive: true, force: true });
 await mkdir(resolve(output, "lang"), { recursive: true });
+await mkdir(wanakanaOutput, { recursive: true });
 
 const files = [
   ["node_modules/tesseract.js/dist/tesseract.esm.min.js", "tesseract.esm.min.js"],
@@ -19,4 +22,6 @@ const files = [
   ["node_modules/@tesseract.js-data/jpn/README.md", "JPN_DATA_README.md"]
 ];
 for (const [from, to] of files) await cp(resolve(root, from), resolve(output, to));
+await cp(resolve(root, "node_modules/wanakana/esm/index.js"), resolve(wanakanaOutput, "index.js"));
+await cp(resolve(root, "node_modules/wanakana/LICENSE"), resolve(wanakanaOutput, "LICENSE"));
 console.log(`Copied ${files.length} local OCR assets to vendor/tesseract.`);

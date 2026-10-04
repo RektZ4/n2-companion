@@ -1,4 +1,6 @@
-import { createWorker } from "./vendor/tesseract/tesseract.esm.min.js";
+import Tesseract from "./vendor/tesseract/tesseract.esm.min.js";
+
+const { createWorker } = Tesseract;
 
 const params = new URLSearchParams(location.search);
 const id = params.get("id");

@@ -12,6 +12,8 @@ reading, usage, or false-friend traps.
 - Select Japanese on ordinary web pages and click the floating **辞** button.
 - Use the **Alt+J** shortcut or the right-click lookup action.
 - Look up readings, definitions, parts of speech, common-word status, and JLPT tags.
+- Select romaji and press **Alt+J** (or use the right-click action) to normalize
+  readings automatically—for example, `oshiroi` → `おしろい` → `白粉`.
 - Save the surrounding sentence, page title, URL, and dictionary result as one card.
 - Warn about a curated set of common Japanese–Chinese false friends.
 - Select text in Chrome's PDF viewer, right-click, and open an automatic lookup window.

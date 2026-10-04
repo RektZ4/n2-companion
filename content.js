@@ -20,15 +20,16 @@
   chrome.runtime.onMessage.addListener((message) => {
     if (message.type === "N2_LOOKUP_TEXT") showLookup(message.text, window.innerWidth / 2, 90);
     if (message.type === "N2_LOOKUP_CURRENT_SELECTION") {
-      const selection = readSelection();
+      const selection = readSelection(true);
       if (selection) showLookup(selection.text, window.innerWidth / 2, 90, selection.context);
     }
   });
 
-  function readSelection() {
+  function readSelection(allowRomaji = false) {
     const selection = window.getSelection();
     const text = compact(selection?.toString(), 100);
-    if (!text || !isJapanese(text) || !selection.rangeCount) return null;
+    const isRomaji = /^[A-Za-z][A-Za-z' -]*$/.test(text);
+    if (!text || (!isJapanese(text) && !(allowRomaji && isRomaji)) || !selection.rangeCount) return null;
     const range = selection.getRangeAt(0);
     const container = range.commonAncestorContainer.nodeType === Node.TEXT_NODE
       ? range.commonAncestorContainer.parentElement

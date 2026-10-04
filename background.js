@@ -1,6 +1,7 @@
-import { cleanSelection, containsJapanese } from "./lib/japanese.js";
+import { cleanSelection } from "./lib/japanese.js";
 import { getSettings, saveCard } from "./lib/storage.js";
 import { getChineseBackgroundCue } from "./lib/cognates.js";
+import { buildLookupQueries } from "./lib/lookup-query.js";
 
 const MENU_ID = "n2-companion-lookup";
 const lookupCache = new Map();
@@ -60,7 +61,7 @@ async function startOcrCapture(tab) {
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message.type === "N2_DICTIONARY_LOOKUP") {
-    lookup(message.text).then((entries) => sendResponse({ ok: true, entries })).catch((error) => sendResponse({ ok: false, error: error.message }));
+    lookup(message.text).then((result) => sendResponse({ ok: true, ...result })).catch((error) => sendResponse({ ok: false, error: error.message }));
     return true;
   }
   if (message.type === "N2_SAVE_CARD") {
@@ -72,14 +73,21 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
 async function lookup(rawText) {
   const text = cleanSelection(rawText);
-  if (!text || !containsJapanese(text)) throw new Error("Select Japanese text first.");
+  const queries = buildLookupQueries(text);
+  if (!text || !queries.length) throw new Error("Enter Japanese text, romaji, or an English dictionary term.");
   const settings = await getSettings();
   const cacheKey = `${settings.chineseBackgroundMode}:${text}`;
   if (lookupCache.has(cacheKey)) return lookupCache.get(cacheKey);
 
-  const response = await fetch(`https://jisho.org/api/v1/search/words?keyword=${encodeURIComponent(text)}`);
-  if (!response.ok) throw new Error(`Dictionary request failed (${response.status}).`);
-  const payload = await response.json();
+  let payload = { data: [] };
+  let normalizedText = text;
+  for (const query of queries) {
+    const response = await fetch(`https://jisho.org/api/v1/search/words?keyword=${encodeURIComponent(query)}`);
+    if (!response.ok) throw new Error(`Dictionary request failed (${response.status}).`);
+    payload = await response.json();
+    normalizedText = query;
+    if (payload.data?.length) break;
+  }
   const entries = payload.data.slice(0, 5).map((item) => ({
     slug: item.slug,
     term: item.japanese?.[0]?.word || item.slug,
@@ -92,7 +100,8 @@ async function lookup(rawText) {
       partsOfSpeech: sense.parts_of_speech || []
     }))
   }));
-  lookupCache.set(cacheKey, entries);
+  const result = { entries, normalizedText };
+  lookupCache.set(cacheKey, result);
   if (lookupCache.size > 100) lookupCache.delete(lookupCache.keys().next().value);
-  return entries;
+  return result;
 }

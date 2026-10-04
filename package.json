@@ -1,6 +1,6 @@
 {
   "name": "n2-companion",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": true,
   "type": "module",
   "description": "A context-first JLPT study extension for kanji-background learners.",
@@ -16,6 +16,7 @@
   "devDependencies": {
     "@tesseract.js-data/jpn": "^1.0.0",
     "esbuild": "^0.28.2",
-    "tesseract.js": "^7.0.0"
+    "tesseract.js": "^7.0.0",
+    "wanakana": "^5.3.1"
   }
 }
