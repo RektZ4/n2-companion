@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
   "name": "N2 Companion",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Turn Japanese encountered online into contextual, reading-first JLPT flashcards.",
-  "permissions": ["storage", "contextMenus", "activeTab"],
+  "permissions": ["storage", "unlimitedStorage", "contextMenus", "activeTab"],
   "host_permissions": ["https://jisho.org/*"],
   "background": {
     "service_worker": "background.js",
@@ -24,7 +24,14 @@
     "lookup-selection": {
       "suggested_key": { "default": "Alt+J" },
       "description": "Look up selected Japanese text"
+    },
+    "screenshot-ocr": {
+      "suggested_key": { "default": "Alt+Shift+J" },
+      "description": "Capture a screen region and recognize Japanese text"
     }
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
   },
   "options_page": "settings.html",
   "web_accessible_resources": [

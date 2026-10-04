@@ -17,6 +17,9 @@ function renderNext() {
   }
   cardEl.hidden = false;
   document.querySelector("#term").textContent = current.term;
+  const screenshot = document.querySelector("#screenshot");
+  screenshot.src = current.screenshot || "";
+  screenshot.hidden = !current.screenshot;
   document.querySelector("#context").textContent = current.context || "No sentence was captured.";
   document.querySelector("#reading").textContent = current.reading ? `【${current.reading}】` : "Reading unavailable";
   document.querySelector("#meanings").textContent = current.meanings.join("; ");

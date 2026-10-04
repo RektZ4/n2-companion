@@ -33,10 +33,30 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
 });
 
 chrome.commands.onCommand.addListener(async (command) => {
-  if (command !== "lookup-selection") return;
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  if (tab?.id) chrome.tabs.sendMessage(tab.id, { type: "N2_LOOKUP_CURRENT_SELECTION" }).catch(() => {});
+  if (!tab?.id) return;
+  if (command === "lookup-selection") {
+    chrome.tabs.sendMessage(tab.id, { type: "N2_LOOKUP_CURRENT_SELECTION" }).catch(() => {});
+  }
+  if (command === "screenshot-ocr") await startOcrCapture(tab);
 });
+
+async function startOcrCapture(tab) {
+  try {
+    const screenshot = await chrome.tabs.captureVisibleTab(tab.windowId, { format: "png" });
+    const id = crypto.randomUUID();
+    await chrome.storage.session.set({ ocrCapture: { id, screenshot, sourceUrl: tab.url || "", sourceTitle: tab.title || "Screen capture", createdAt: Date.now() } });
+    const currentWindow = await chrome.windows.get(tab.windowId);
+    await chrome.windows.create({
+      url: chrome.runtime.getURL(`capture.html?id=${encodeURIComponent(id)}`),
+      type: "popup",
+      width: Math.max(600, Math.min(1200, currentWindow.width || 1000)),
+      height: Math.max(500, Math.min(900, currentWindow.height || 750))
+    });
+  } catch (error) {
+    console.error("N2 Companion OCR capture failed", error);
+  }
+}
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message.type === "N2_DICTIONARY_LOOKUP") {

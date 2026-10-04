@@ -1,13 +1,21 @@
 {
   "name": "n2-companion",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "description": "A context-first JLPT study extension for kanji-background learners.",
   "scripts": {
     "test": "node --test",
-    "check": "node scripts/validate-extension.js"
+    "check": "node scripts/validate-extension.js",
+    "build:ocr": "node scripts/build-ocr-assets.js"
   },
-  "engines": { "node": ">=20" },
-  "license": "MIT"
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@tesseract.js-data/jpn": "^1.0.0",
+    "esbuild": "^0.28.2",
+    "tesseract.js": "^7.0.0"
+  }
 }

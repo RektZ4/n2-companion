@@ -1,0 +1,9 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Japanese OCR · N2 Companion</title><link rel="stylesheet" href="styles.css"></head>
+<body><main class="page ocr-page">
+  <header class="page-header"><div><p class="eyebrow">LOCAL JAPANESE OCR</p><h1>Recognize captured text</h1></div><span id="progress" class="progress">Preparing OCR…</span></header>
+  <section class="ocr-grid"><div class="card"><canvas id="crop"></canvas></div><div class="card"><label for="recognized"><b>Recognized text</b></label><textarea id="recognized" rows="7" placeholder="OCR result will appear here…"></textarea><p class="hint">Correct any OCR mistakes, then select a word or phrase below.</p><div class="actions"><button id="lookup" class="primary" disabled>Look up recognized text</button><button id="retry" class="secondary">Choose another region</button></div></div></section>
+  <section id="results"></section>
+</main><script type="module" src="ocr.js"></script></body>
+</html>

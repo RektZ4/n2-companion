@@ -15,6 +15,9 @@ reading, usage, or false-friend traps.
 - Save the surrounding sentence, page title, URL, and dictionary result as one card.
 - Warn about a curated set of common Japanese–Chinese false friends.
 - Select text in Chrome's PDF viewer, right-click, and open an automatic lookup window.
+- Press **Alt+Shift+J** anywhere to capture the visible tab, crop Japanese text,
+  and recognize it locally—even in PDFs, images, manga, Instagram, and video.
+- Save the cropped source image with its contextual flashcard.
 - Review due cards with Again, Hard, Good, and Easy scheduling.
 - Track due cards, retention, today's reviews, daily goal, and exam countdown.
 - Change the exam date and daily goal; export or restore a local JSON backup.
@@ -31,6 +34,9 @@ Jisho's public search endpoint; no sentence context is sent.
 5. Choose this repository folder.
 6. Open a normal web page containing Japanese, select a word, and click **辞**.
 
+Use **Alt+Shift+J** for screenshot OCR. If that shortcut conflicts with another
+application, change it at `chrome://extensions/shortcuts`.
+
 Chrome does not inject extensions into already-open tabs. Refresh existing tabs
 once after installation. Browser-internal pages such as `chrome://` cannot be
 modified by extensions.
@@ -38,10 +44,11 @@ modified by extensions.
 ## PDFs, images, and video
 
 Normal page text needs no OCR. For selectable PDFs, select a term and choose
-**Look up Japanese** from the right-click menu. Scanned PDFs, manga, screenshots, and burned-in video
-subtitles contain pixels rather than selectable characters and therefore need
-OCR. Region capture, local Japanese OCR, and storing a source frame with a card
-are planned for the next milestone.
+**Look up Japanese** from the right-click menu. For scanned PDFs, manga,
+screenshots, and burned-in video subtitles, press **Alt+Shift+J**, drag around
+the text in the captured frame, correct the OCR result if necessary, and look
+up the relevant word. OCR runs locally using Tesseract.js and Japanese trained
+data; the first recognition can take longer while the engine initializes.
 
 ## Architecture
 
@@ -66,8 +73,8 @@ npm run check
 
 ## Roadmap
 
-- [ ] Region screenshot capture and local Japanese OCR
-- [ ] Attach source images to cards
+- [x] Region screenshot capture and local Japanese OCR
+- [x] Attach source images to cards
 - [ ] YouTube subtitle-track capture
 - [ ] More reviewed Japanese–Chinese cognate and false-friend data
 - [ ] CSV and Anki export
