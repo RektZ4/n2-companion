@@ -33,26 +33,3 @@ for (const card of cards.slice(0, 4)) {
 
 document.querySelector("#review").addEventListener("click", () => chrome.tabs.create({ url: chrome.runtime.getURL("review.html") }));
 document.querySelector("#settings").addEventListener("click", () => chrome.runtime.openOptionsPage());
-
-document.querySelector("#lookupForm").addEventListener("submit", async (event) => {
-  event.preventDefault();
-  const text = document.querySelector("#lookupInput").value.trim();
-  const output = document.querySelector("#lookupResult");
-  output.className = "lookup-result"; output.textContent = "Looking up…";
-  const response = await chrome.runtime.sendMessage({ type: "N2_DICTIONARY_LOOKUP", text });
-  const entry = response?.entries?.[0];
-  if (!entry) { output.textContent = response?.error || "No entry found."; return; }
-  const meanings = entry.senses.flatMap((sense) => sense.meanings).slice(0, 5);
-  const partsOfSpeech = [...new Set(entry.senses.flatMap((sense) => sense.partsOfSpeech))].slice(0, 3);
-  output.innerHTML = `<b></b><small></small><p></p><div class="cue" hidden></div><button class="secondary">Save card</button>`;
-  output.querySelector("b").textContent = entry.term;
-  output.querySelector("small").textContent = entry.reading;
-  output.querySelector("p").textContent = meanings.join("; ");
-  const cue = output.querySelector(".cue");
-  if (entry.chineseCue) { cue.textContent = entry.chineseCue; cue.hidden = false; }
-  output.querySelector("button").addEventListener("click", async (click) => {
-    const result = await chrome.runtime.sendMessage({ type: "N2_SAVE_CARD", card: { term: entry.term, reading: entry.reading, meanings, partsOfSpeech, context: text, sourceType: "paste", tags: entry.jlpt.length ? entry.jlpt.map((tag) => tag.toUpperCase()) : ["N2"], notes: entry.chineseCue || "" } });
-    click.currentTarget.textContent = result?.duplicate ? "Already saved" : "Saved ✓";
-    click.currentTarget.disabled = true;
-  });
-});

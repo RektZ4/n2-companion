@@ -14,7 +14,7 @@ reading, usage, or false-friend traps.
 - Look up readings, definitions, parts of speech, common-word status, and JLPT tags.
 - Save the surrounding sentence, page title, URL, and dictionary result as one card.
 - Warn about a curated set of common Japanese–Chinese false friends.
-- Paste selectable text copied from Chrome's PDF viewer into the extension popup.
+- Select text in Chrome's PDF viewer, right-click, and open an automatic lookup window.
 - Review due cards with Again, Hard, Good, and Easy scheduling.
 - Track due cards, retention, today's reviews, daily goal, and exam countdown.
 - Change the exam date and daily goal; export or restore a local JSON backup.
@@ -37,8 +37,8 @@ modified by extensions.
 
 ## PDFs, images, and video
 
-Normal page text needs no OCR. For selectable PDFs, copy the text and paste it
-into the popup lookup box. Scanned PDFs, manga, screenshots, and burned-in video
+Normal page text needs no OCR. For selectable PDFs, select a term and choose
+**Look up Japanese** from the right-click menu. Scanned PDFs, manga, screenshots, and burned-in video
 subtitles contain pixels rather than selectable characters and therefore need
 OCR. Region capture, local Japanese OCR, and storing a source frame with a card
 are planned for the next milestone.

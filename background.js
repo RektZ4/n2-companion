@@ -1,5 +1,5 @@
 import { cleanSelection, containsJapanese } from "./lib/japanese.js";
-import { saveCard } from "./lib/storage.js";
+import { getSettings, saveCard } from "./lib/storage.js";
 import { getChineseBackgroundCue } from "./lib/cognates.js";
 
 const MENU_ID = "n2-companion-lookup";
@@ -13,9 +13,23 @@ chrome.runtime.onInstalled.addListener(() => {
   }));
 });
 
-chrome.contextMenus.onClicked.addListener((info, tab) => {
+chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   if (info.menuItemId !== MENU_ID || !tab?.id) return;
-  chrome.tabs.sendMessage(tab.id, { type: "N2_LOOKUP_TEXT", text: info.selectionText }).catch(() => {});
+  try {
+    await chrome.tabs.sendMessage(tab.id, { type: "N2_LOOKUP_TEXT", text: info.selectionText });
+  } catch {
+    const query = new URLSearchParams({
+      text: cleanSelection(info.selectionText),
+      sourceUrl: info.pageUrl || tab.url || "",
+      sourceTitle: tab.title || "PDF"
+    });
+    await chrome.windows.create({
+      url: chrome.runtime.getURL(`lookup.html?${query}`),
+      type: "popup",
+      width: 440,
+      height: 620
+    });
+  }
 });
 
 chrome.commands.onCommand.addListener(async (command) => {
@@ -39,7 +53,9 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 async function lookup(rawText) {
   const text = cleanSelection(rawText);
   if (!text || !containsJapanese(text)) throw new Error("Select Japanese text first.");
-  if (lookupCache.has(text)) return lookupCache.get(text);
+  const settings = await getSettings();
+  const cacheKey = `${settings.chineseBackgroundMode}:${text}`;
+  if (lookupCache.has(cacheKey)) return lookupCache.get(cacheKey);
 
   const response = await fetch(`https://jisho.org/api/v1/search/words?keyword=${encodeURIComponent(text)}`);
   if (!response.ok) throw new Error(`Dictionary request failed (${response.status}).`);
@@ -50,13 +66,13 @@ async function lookup(rawText) {
     reading: item.japanese?.[0]?.reading || "",
     jlpt: item.jlpt || [],
     common: Boolean(item.is_common),
-    chineseCue: getChineseBackgroundCue(item.japanese?.[0]?.word || item.slug),
+    chineseCue: settings.chineseBackgroundMode ? getChineseBackgroundCue(item.japanese?.[0]?.word || item.slug) : "",
     senses: (item.senses || []).slice(0, 4).map((sense) => ({
       meanings: sense.english_definitions || [],
       partsOfSpeech: sense.parts_of_speech || []
     }))
   }));
-  lookupCache.set(text, entries);
+  lookupCache.set(cacheKey, entries);
   if (lookupCache.size > 100) lookupCache.delete(lookupCache.keys().next().value);
   return entries;
 }

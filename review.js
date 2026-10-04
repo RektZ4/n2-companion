@@ -21,6 +21,9 @@ function renderNext() {
   document.querySelector("#reading").textContent = current.reading ? `【${current.reading}】` : "Reading unavailable";
   document.querySelector("#meanings").textContent = current.meanings.join("; ");
   document.querySelector("#parts").textContent = current.partsOfSpeech.join(" · ");
+  const note = document.querySelector("#note");
+  note.textContent = current.notes || "";
+  note.hidden = !current.notes;
   const source = document.querySelector("#source");
   source.textContent = current.sourceTitle || current.sourceUrl || "";
   source.href = current.sourceUrl || "#";
