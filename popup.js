@@ -34,3 +34,24 @@ for (const card of cards.slice(0, 4)) {
 document.querySelector("#review").addEventListener("click", () => chrome.tabs.create({ url: chrome.runtime.getURL("review.html") }));
 document.querySelector("#settings").addEventListener("click", () => chrome.runtime.openOptionsPage());
 document.querySelector("#pdfReader").addEventListener("click", () => chrome.tabs.create({ url: chrome.runtime.getURL("pdf-reader.html") }));
+
+const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+const currentPdfButton = document.querySelector("#currentPdf");
+const pdfNotice = document.querySelector("#pdfNotice");
+const activeUrl = activeTab?.url || "";
+if (/^(https?:|file:)/.test(activeUrl) && (/\.pdf(?:$|[?#])/i.test(activeUrl) || activeTab?.title?.toLowerCase().includes(".pdf"))) {
+  currentPdfButton.hidden = false;
+  currentPdfButton.addEventListener("click", async () => {
+    const permission = activeUrl.startsWith("file:") ? "file:///*" : `${new URL(activeUrl).origin}/*`;
+    const granted = await chrome.permissions.request({ origins: [permission] });
+    if (!granted) {
+      pdfNotice.hidden = false;
+      pdfNotice.textContent = activeUrl.startsWith("file:")
+        ? "Enable “Allow access to file URLs” for N2 Companion, then try again."
+        : "Permission is needed to read this PDF locally.";
+      return;
+    }
+    await chrome.tabs.create({ url: chrome.runtime.getURL(`pdf-reader.html?source=${encodeURIComponent(activeUrl)}`) });
+    window.close();
+  });
+}

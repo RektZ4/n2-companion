@@ -53,6 +53,11 @@ highlighted Japanese uses the same red **辞** button as a normal website.
 **Alt+J** also looks up the current selection. Image-only pages remain available
 to **Alt+Shift+J** screenshot OCR.
 
+When the active tab is already displaying a direct PDF URL, the popup offers
+**Open this PDF in N2 Companion**. The extension requests access only to that
+PDF's origin. Local `file://` PDFs additionally require Chrome's one-time
+**Allow access to file URLs** toggle on the extension details page.
+
 ## PDFs, images, and video
 
 Normal page text needs no OCR. For selectable PDFs, select a term and choose

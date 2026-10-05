@@ -9,6 +9,7 @@ const zoom = document.querySelector("#pdfZoom");
 const dropZone = document.querySelector("#pdfDropZone");
 let documentProxy = null;
 let renderGeneration = 0;
+const sourceUrl = new URLSearchParams(location.search).get("source");
 
 document.querySelectorAll('input[type="file"]').forEach((input) => input.addEventListener("change", () => {
   const file = input.files?.[0];
@@ -27,6 +28,8 @@ dropZone.addEventListener("drop", (event) => {
 });
 zoom.addEventListener("change", () => { if (documentProxy) renderPdf(documentProxy, Number(zoom.value)); });
 
+if (sourceUrl) openPdfUrl(sourceUrl);
+
 async function openPdf(file) {
   status.textContent = `Opening ${file.name}…`;
   document.title = `${file.name} · N2 Companion`;
@@ -36,6 +39,24 @@ async function openPdf(file) {
     await renderPdf(documentProxy, Number(zoom.value));
   } catch (error) {
     status.textContent = `Could not open PDF: ${error?.message || String(error)}`;
+  }
+}
+
+async function openPdfUrl(url) {
+  const name = decodeURIComponent(url.split("/").pop()?.split(/[?#]/)[0] || "PDF");
+  status.textContent = `Opening ${name}…`;
+  document.title = `${name} · N2 Companion`;
+  try {
+    const response = await fetch(url, { credentials: "include" });
+    if (!response.ok) throw new Error(`PDF request failed (${response.status})`);
+    documentProxy = await getDocument({ data: new Uint8Array(await response.arrayBuffer()) }).promise;
+    empty.hidden = true;
+    await renderPdf(documentProxy, Number(zoom.value));
+  } catch (error) {
+    status.textContent = `Could not open current PDF: ${error?.message || String(error)}`;
+    empty.querySelector("p").textContent = url.startsWith("file:")
+      ? "Chrome may require you to enable “Allow access to file URLs” for N2 Companion. You can also choose the file below."
+      : "This site may protect the PDF URL. Download it and choose the local file below instead.";
   }
 }
 
