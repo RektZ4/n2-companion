@@ -8,7 +8,7 @@ for (const path of paths) await access(new URL(`../${path}`, import.meta.url), c
 if (!manifest.host_permissions.includes("https://jisho.org/*")) throw new Error("Jisho host permission is missing");
 const readerSource = await readFile(new URL("../pdf-reader.js", import.meta.url), "utf8");
 const styles = await readFile(new URL("../styles.css", import.meta.url), "utf8");
-for (const marker of ["streamTextContent", "includeMarkedContent", "disableNormalization", "--scale-factor"]) {
+for (const marker of ["streamTextContent", "includeMarkedContent", "disableNormalization", "--scale-factor", "event.ctrlKey", "passive: false"]) {
   if (!readerSource.includes(marker) && !styles.includes(marker)) throw new Error(`PDF text-layer integration is missing ${marker}`);
 }
 console.log(`Validated ${manifest.name} v${manifest.version}: ${paths.length} entry points found.`);

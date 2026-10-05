@@ -55,6 +55,8 @@ to **Alt+Shift+J** screenshot OCR.
 
 The text layer follows PDF.js's official viewer scaling, marked-content, and
 selection rules so highlight hitboxes align with the rendered glyphs.
+Use **Ctrl+mouse-wheel** to change the reader's top-right zoom level without
+triggering a separate Chrome page zoom.
 
 When the active tab is already displaying a direct PDF URL, the popup offers
 **Open this PDF in N2 Companion**. The extension requests access only to that

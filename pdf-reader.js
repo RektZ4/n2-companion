@@ -9,6 +9,7 @@ const zoom = document.querySelector("#pdfZoom");
 const dropZone = document.querySelector("#pdfDropZone");
 let documentProxy = null;
 let renderGeneration = 0;
+let zoomRenderTimer = null;
 const sourceUrl = new URLSearchParams(location.search).get("source");
 
 document.querySelectorAll('input[type="file"]').forEach((input) => input.addEventListener("change", () => {
@@ -26,9 +27,26 @@ dropZone.addEventListener("drop", (event) => {
   const file = [...event.dataTransfer.files].find((item) => item.type === "application/pdf" || item.name.toLowerCase().endsWith(".pdf"));
   if (file) openPdf(file);
 });
-zoom.addEventListener("change", () => { if (documentProxy) renderPdf(documentProxy, Number(zoom.value)); });
+zoom.addEventListener("change", scheduleZoomRender);
+document.addEventListener("wheel", (event) => {
+  if (!event.ctrlKey) return;
+  event.preventDefault();
+  const options = [...zoom.options];
+  const direction = event.deltaY < 0 ? 1 : -1;
+  const nextIndex = Math.max(0, Math.min(options.length - 1, zoom.selectedIndex + direction));
+  if (nextIndex === zoom.selectedIndex) return;
+  zoom.selectedIndex = nextIndex;
+  scheduleZoomRender();
+}, { passive: false });
 
 if (sourceUrl) openPdfUrl(sourceUrl);
+
+function scheduleZoomRender() {
+  clearTimeout(zoomRenderTimer);
+  if (!documentProxy) return;
+  status.textContent = `Zoom ${Math.round(Number(zoom.value) * 100)}%…`;
+  zoomRenderTimer = setTimeout(() => renderPdf(documentProxy, Number(zoom.value)), 160);
+}
 
 async function openPdf(file) {
   status.textContent = `Opening ${file.name}…`;
