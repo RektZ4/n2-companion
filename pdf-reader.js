@@ -70,6 +70,8 @@ async function renderPdf(pdf, scale) {
     const viewport = page.getViewport({ scale });
     const wrapper = document.createElement("section");
     wrapper.className = "pdf-page";
+    wrapper.style.setProperty("--scale-factor", scale);
+    wrapper.style.setProperty("--user-unit", page.userUnit || 1);
     wrapper.style.width = `${viewport.width}px`;
     wrapper.style.height = `${viewport.height}px`;
     wrapper.setAttribute("aria-label", `Page ${pageNumber}`);
@@ -85,8 +87,20 @@ async function renderPdf(pdf, scale) {
     wrapper.appendChild(textContainer);
     pages.appendChild(wrapper);
     await page.render({ canvasContext: canvas.getContext("2d"), viewport, transform: pixelRatio === 1 ? null : [pixelRatio, 0, 0, pixelRatio, 0, 0] }).promise;
-    const textContent = await page.getTextContent();
-    await new TextLayer({ textContentSource: textContent, container: textContainer, viewport }).render();
+    const textLayer = new TextLayer({
+      textContentSource: page.streamTextContent({ includeMarkedContent: true, disableNormalization: true }),
+      container: textContainer,
+      viewport
+    });
+    await textLayer.render();
+    const endOfContent = document.createElement("div");
+    endOfContent.className = "endOfContent";
+    textContainer.appendChild(endOfContent);
+    textContainer.addEventListener("mousedown", () => textContainer.classList.add("selecting"));
   }
   status.textContent = `${pdf.numPages} page${pdf.numPages === 1 ? "" : "s"} · Select Japanese for lookup`;
 }
+
+document.addEventListener("pointerup", () => {
+  document.querySelectorAll(".textLayer.selecting").forEach((layer) => layer.classList.remove("selecting"));
+});

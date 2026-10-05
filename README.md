@@ -53,6 +53,9 @@ highlighted Japanese uses the same red **辞** button as a normal website.
 **Alt+J** also looks up the current selection. Image-only pages remain available
 to **Alt+Shift+J** screenshot OCR.
 
+The text layer follows PDF.js's official viewer scaling, marked-content, and
+selection rules so highlight hitboxes align with the rendered glyphs.
+
 When the active tab is already displaying a direct PDF URL, the popup offers
 **Open this PDF in N2 Companion**. The extension requests access only to that
 PDF's origin. Local `file://` PDFs additionally require Chrome's one-time
