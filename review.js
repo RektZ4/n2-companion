@@ -1,11 +1,16 @@
-import { getCards, updateCard } from "./lib/storage.js";
+import { getCards, getDecks, getSettings, saveSettings, updateCard } from "./lib/storage.js";
 import { isDue, scheduleReview } from "./lib/scheduler.js";
+import { segmentFurigana } from "./lib/furigana.js";
+import { appendFurigana } from "./lib/render.js";
 
-let queue = (await getCards()).filter((card) => isDue(card)).sort((a, b) => a.dueAt - b.dueAt);
+const [allCards, decks, settings] = await Promise.all([getCards(), getDecks(), getSettings()]);
+const archivedDecks = new Set(decks.filter((deck) => deck.archived).map((deck) => deck.id));
+let queue = allCards.filter((card) => !card.suspended && !archivedDecks.has(card.deckId) && isDue(card)).sort((a, b) => a.dueAt - b.dueAt);
 let completed = 0;
 let current = null;
 const cardEl = document.querySelector("#reviewCard");
 const finishedEl = document.querySelector("#finished");
+document.body.classList.toggle("dark", settings.reviewDarkMode);
 
 function renderNext() {
   current = queue.shift();
@@ -16,13 +21,15 @@ function renderNext() {
     return;
   }
   cardEl.hidden = false;
-  document.querySelector("#term").textContent = current.term;
+  appendFurigana(document.querySelector("#term"), current.furigana || segmentFurigana(current.term, current.reading), current.term);
   const screenshot = document.querySelector("#screenshot");
   screenshot.src = current.screenshot || "";
   screenshot.hidden = !current.screenshot;
   document.querySelector("#context").textContent = current.context || "No sentence was captured.";
   document.querySelector("#reading").textContent = current.reading ? `【${current.reading}】` : "Reading unavailable";
   document.querySelector("#meanings").textContent = current.meanings.join("; ");
+  const example = document.querySelector("#example"); example.hidden = !current.example;
+  if (current.example) { example.querySelector("p").textContent = current.example.japanese; example.querySelector("small").textContent = current.example.english; }
   document.querySelector("#parts").textContent = current.partsOfSpeech.join(" · ");
   const note = document.querySelector("#note");
   note.textContent = current.notes || "";
@@ -52,4 +59,9 @@ document.querySelectorAll("[data-grade]").forEach((button) => button.addEventLis
 }));
 
 document.querySelector("#close").addEventListener("click", () => window.close());
+document.querySelector("#darkMode").addEventListener("click", async () => {
+  const enabled = !document.body.classList.contains("dark");
+  document.body.classList.toggle("dark", enabled);
+  await saveSettings({ reviewDarkMode: enabled });
+});
 renderNext();

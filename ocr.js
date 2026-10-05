@@ -1,5 +1,6 @@
 import Tesseract from "./vendor/tesseract/tesseract.esm.min.js";
 import { errorMessage } from "./lib/errors.js";
+import { appendFurigana } from "./lib/render.js";
 
 const { createWorker } = Tesseract;
 
@@ -53,13 +54,14 @@ function renderResults(response, selected) {
     const meanings = entry.senses.flatMap((sense) => sense.meanings).slice(0, 5);
     const partsOfSpeech = [...new Set(entry.senses.flatMap((sense) => sense.partsOfSpeech))].slice(0, 3);
     const article = document.createElement("article"); article.className = "lookup-card";
-    article.innerHTML = `<h2><span class="word"></span> <small class="reading-inline"></small></h2><p class="definition"></p><p class="pdf-cue" hidden></p><button class="primary">Save card with screenshot</button>`;
-    article.querySelector(".word").textContent = entry.term; article.querySelector(".reading-inline").textContent = entry.reading ? `【${entry.reading}】` : ""; article.querySelector(".definition").textContent = meanings.join("; ");
+    article.innerHTML = `<h2><span class="word"></span> <small class="reading-inline"></small></h2><p class="definition"></p><p class="example" hidden></p><p class="pdf-cue" hidden></p><button class="primary">Save card with screenshot</button>`;
+    appendFurigana(article.querySelector(".word"), entry.furigana, entry.term); article.querySelector(".reading-inline").textContent = entry.furigana?.length ? "" : (entry.reading ? `【${entry.reading}】` : ""); article.querySelector(".definition").textContent = meanings.join("; ");
+    const example = article.querySelector(".example"); if (entry.example) { example.textContent = `${entry.example.japanese} — ${entry.example.english}`; example.hidden = false; }
     const cue = article.querySelector(".pdf-cue"); if (entry.chineseCue) { cue.textContent = entry.chineseCue; cue.hidden = false; }
     article.querySelector("button").addEventListener("click", async (event) => {
       const screenshot = canvas.toDataURL("image/jpeg", 0.82);
-      const result = await chrome.runtime.sendMessage({ type: "N2_SAVE_CARD", card: { term: entry.term, reading: entry.reading, meanings, partsOfSpeech, context: recognized.value.trim(), sourceUrl: ocrCapture.sourceUrl, sourceTitle: ocrCapture.sourceTitle, sourceType: "ocr", screenshot, tags: entry.jlpt.length ? entry.jlpt.map((tag) => tag.toUpperCase()) : ["N2"], notes: entry.chineseCue || "" } });
-      event.currentTarget.textContent = result?.duplicate ? "Already saved" : "Saved with screenshot ✓"; event.currentTarget.disabled = true;
+      const result = await chrome.runtime.sendMessage({ type: "N2_SAVE_CARD", card: { term: entry.term, reading: entry.reading, meanings, partsOfSpeech, context: recognized.value.trim(), sourceUrl: ocrCapture.sourceUrl, sourceTitle: ocrCapture.sourceTitle, sourceType: "ocr", screenshot, tags: entry.jlpt.length ? entry.jlpt.map((tag) => tag.toUpperCase()) : ["N2"], notes: entry.chineseCue || "", furigana: entry.furigana, example: entry.example } });
+      event.currentTarget.textContent = result?.duplicate ? "Added another encounter ✓" : "Saved with screenshot ✓"; event.currentTarget.disabled = true;
     });
     results.appendChild(article);
   }

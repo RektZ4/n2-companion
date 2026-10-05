@@ -10,6 +10,8 @@ const dropZone = document.querySelector("#pdfDropZone");
 let documentProxy = null;
 let renderGeneration = 0;
 let zoomRenderTimer = null;
+let annotationMode = "select";
+const annotations = new Map();
 const sourceUrl = new URLSearchParams(location.search).get("source");
 
 document.querySelectorAll('input[type="file"]').forEach((input) => input.addEventListener("change", () => {
@@ -38,6 +40,19 @@ document.addEventListener("wheel", (event) => {
   zoom.selectedIndex = nextIndex;
   scheduleZoomRender();
 }, { passive: false });
+document.querySelectorAll("[data-annotation]").forEach((button) => button.addEventListener("click", () => {
+  annotationMode = button.dataset.annotation;
+  document.querySelectorAll("[data-annotation]").forEach((item) => item.classList.toggle("active", item === button));
+  document.querySelectorAll(".annotation-layer").forEach((canvas) => {
+    canvas.style.pointerEvents = annotationMode === "select" ? "none" : "auto";
+    canvas.style.cursor = annotationMode === "draw" ? "crosshair" : "text";
+  });
+}));
+document.querySelector("#clearAnnotations").addEventListener("click", () => {
+  if (!annotations.size || !confirm("Clear all drawing and text annotations in this reader session?")) return;
+  annotations.clear();
+  if (documentProxy) renderPdf(documentProxy, Number(zoom.value));
+});
 
 if (sourceUrl) openPdfUrl(sourceUrl);
 
@@ -115,8 +130,61 @@ async function renderPdf(pdf, scale) {
     endOfContent.className = "endOfContent";
     textContainer.appendChild(endOfContent);
     textContainer.addEventListener("mousedown", () => textContainer.classList.add("selecting"));
+    const annotationCanvas = document.createElement("canvas");
+    annotationCanvas.className = "annotation-layer";
+    annotationCanvas.width = Math.floor(viewport.width * pixelRatio);
+    annotationCanvas.height = Math.floor(viewport.height * pixelRatio);
+    annotationCanvas.style.width = `${viewport.width}px`;
+    annotationCanvas.style.height = `${viewport.height}px`;
+    annotationCanvas.style.pointerEvents = annotationMode === "select" ? "none" : "auto";
+    annotationCanvas.style.cursor = annotationMode === "draw" ? "crosshair" : "text";
+    wrapper.appendChild(annotationCanvas);
+    setupAnnotationCanvas(annotationCanvas, pageNumber, viewport, pixelRatio);
   }
   status.textContent = `${pdf.numPages} page${pdf.numPages === 1 ? "" : "s"} · Select Japanese for lookup`;
+}
+
+function setupAnnotationCanvas(canvas, pageNumber, viewport, pixelRatio) {
+  const context = canvas.getContext("2d");
+  context.scale(pixelRatio, pixelRatio);
+  const items = annotations.get(pageNumber) || [];
+  redrawAnnotations(context, items, viewport);
+  let stroke = null;
+  const point = (event) => {
+    const rect = canvas.getBoundingClientRect();
+    return [(event.clientX - rect.left) / rect.width, (event.clientY - rect.top) / rect.height];
+  };
+  canvas.addEventListener("pointerdown", (event) => {
+    if (annotationMode === "draw") {
+      stroke = { type: "stroke", points: [point(event)], color: "#d12835", width: 2.5 };
+      items.push(stroke); annotations.set(pageNumber, items); canvas.setPointerCapture(event.pointerId);
+    } else if (annotationMode === "text") {
+      const text = prompt("Annotation text");
+      if (!text?.trim()) return;
+      items.push({ type: "text", point: point(event), text: text.trim(), color: "#d12835", size: 16 });
+      annotations.set(pageNumber, items); redrawAnnotations(context, items, viewport);
+    }
+  });
+  canvas.addEventListener("pointermove", (event) => {
+    if (!stroke) return;
+    stroke.points.push(point(event)); redrawAnnotations(context, items, viewport);
+  });
+  canvas.addEventListener("pointerup", () => { stroke = null; });
+}
+
+function redrawAnnotations(context, items, viewport) {
+  context.clearRect(0, 0, viewport.width, viewport.height);
+  context.lineCap = "round"; context.lineJoin = "round";
+  for (const item of items) {
+    if (item.type === "stroke") {
+      context.beginPath(); context.strokeStyle = item.color; context.lineWidth = item.width;
+      item.points.forEach(([x, y], index) => { const px = x * viewport.width; const py = y * viewport.height; if (index) context.lineTo(px, py); else context.moveTo(px, py); });
+      context.stroke();
+    } else if (item.type === "text") {
+      context.fillStyle = item.color; context.font = `600 ${item.size}px system-ui`;
+      context.fillText(item.text, item.point[0] * viewport.width, item.point[1] * viewport.height);
+    }
+  }
 }
 
 document.addEventListener("pointerup", () => {

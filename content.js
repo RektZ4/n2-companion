@@ -57,7 +57,7 @@
       .trigger{width:34px;height:34px;border:0;border-radius:10px;background:#e5484d;color:white;box-shadow:0 5px 18px #0004}
       .panel{width:min(390px,calc(100vw - 24px));max-height:min(540px,calc(100vh - 24px));overflow:auto;background:#fffdf8;color:#272522;border:1px solid #eadfce;border-radius:16px;box-shadow:0 18px 55px #30281840;font:14px/1.45 system-ui;padding:16px}
       .top{display:flex;align-items:center;justify-content:space-between;gap:12px}.brand{color:#b4232c;font-weight:800;letter-spacing:.03em}.close{border:0;background:transparent;font-size:20px;color:#746b60}
-      .selected{font:700 23px/1.3 system-ui;margin:8px 0 14px}.entry{border-top:1px solid #eee3d3;padding:13px 0}.word{font-size:19px;font-weight:750}.reading{color:#72685d;margin-left:7px}.meaning{margin:7px 0;color:#3f3a34}.cue{background:#fff0d9;border-left:3px solid #cf852e;padding:8px 9px;margin:8px 0;font-size:12px}.meta{font-size:11px;color:#877b6e;text-transform:uppercase}.save{width:100%;border:0;border-radius:9px;padding:9px;background:#272522;color:white}.save:hover{background:#b4232c}.saved{background:#477a5b}.status{padding:18px;text-align:center;color:#746b60}.error{color:#b4232c}
+      .selected{font:700 23px/1.3 system-ui;margin:8px 0 14px}.entry{border-top:1px solid #eee3d3;padding:13px 0}.word{font-size:19px;font-weight:750}.reading{color:#72685d;margin-left:7px}.meaning{margin:7px 0;color:#3f3a34}.example{margin:8px 0;padding:8px;background:#f6efe4;border-radius:8px;font-size:12px}.example small{display:block;color:#746b60}.cue{background:#fff0d9;border-left:3px solid #cf852e;padding:8px 9px;margin:8px 0;font-size:12px}.meta{font-size:11px;color:#877b6e;text-transform:uppercase}.save{width:100%;border:0;border-radius:9px;padding:9px;background:#272522;color:white}.save:hover{background:#b4232c}.saved{background:#477a5b}.status{padding:18px;text-align:center;color:#746b60}.error{color:#b4232c}ruby{ruby-position:over;border-bottom:2px solid #efd0d2}rt{font-size:10px;color:#b4232c}
     </style>`;
     document.documentElement.appendChild(host);
     return { host, shadow };
@@ -97,11 +97,13 @@
       section.className = "entry";
       const meanings = entry.senses.flatMap((sense) => sense.meanings).slice(0, 5);
       const parts = [...new Set(entry.senses.flatMap((sense) => sense.partsOfSpeech))].slice(0, 3);
-      section.innerHTML = `<div><span class="word"></span><span class="reading"></span></div><div class="meta"></div><div class="meaning"></div><div class="cue" hidden></div><button class="save">Save contextual card</button>`;
-      section.querySelector(".word").textContent = entry.term;
-      section.querySelector(".reading").textContent = entry.reading ? `【${entry.reading}】` : "";
+      section.innerHTML = `<div><span class="word"></span><span class="reading"></span></div><div class="meta"></div><div class="meaning"></div><div class="example" hidden><span></span><small></small></div><div class="cue" hidden></div><button class="save">Save contextual card</button>`;
+      renderFurigana(section.querySelector(".word"), entry.furigana, entry.term);
+      section.querySelector(".reading").textContent = entry.furigana?.length ? "" : (entry.reading ? `【${entry.reading}】` : "");
       section.querySelector(".meta").textContent = [entry.jlpt.join(" · ").toUpperCase(), ...parts].filter(Boolean).join(" · ");
       section.querySelector(".meaning").textContent = meanings.join("; ");
+      const example = section.querySelector(".example");
+      if (entry.example) { example.querySelector("span").textContent = entry.example.japanese; example.querySelector("small").textContent = entry.example.english; example.hidden = false; }
       const cue = section.querySelector(".cue");
       if (entry.chineseCue) { cue.textContent = entry.chineseCue; cue.hidden = false; }
       section.querySelector(".save").addEventListener("click", async (event) => {
@@ -110,9 +112,9 @@
         const result = await chrome.runtime.sendMessage({ type: "N2_SAVE_CARD", card: {
           term: entry.term, reading: entry.reading, meanings, partsOfSpeech: parts,
           context: context || selected, sourceUrl: location.href, sourceTitle: document.title,
-          tags: entry.jlpt.length ? entry.jlpt.map((tag) => tag.toUpperCase()) : ["N2"], notes: entry.chineseCue || ""
+          tags: entry.jlpt.length ? entry.jlpt.map((tag) => tag.toUpperCase()) : ["N2"], notes: entry.chineseCue || "", example: entry.example, furigana: entry.furigana
         }});
-        button.textContent = result?.duplicate ? "Already saved" : "Saved for review ✓";
+        button.textContent = result?.duplicate ? "Added another encounter ✓" : "Saved for review ✓";
         button.classList.add("saved");
       });
       panel.appendChild(section);
@@ -121,5 +123,15 @@
 
   function removeHost() {
     document.getElementById(HOST_ID)?.remove();
+  }
+
+  function renderFurigana(container, segments, fallback) {
+    container.replaceChildren();
+    if (!segments?.length) { container.textContent = fallback; return; }
+    for (const segment of segments) {
+      if (!segment.reading) { container.append(document.createTextNode(segment.text)); continue; }
+      const ruby = document.createElement("ruby"); ruby.append(document.createTextNode(segment.text));
+      const rt = document.createElement("rt"); rt.textContent = segment.reading; ruby.append(rt); container.append(ruby);
+    }
   }
 })();

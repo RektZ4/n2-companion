@@ -11,7 +11,8 @@ reading, usage, or false-friend traps.
 
 - Select Japanese on ordinary web pages and click the floating **辞** button.
 - Use the **Alt+J** shortcut or the right-click lookup action.
-- Look up readings, definitions, parts of speech, common-word status, and JLPT tags.
+- Look up readings, furigana, definitions, parts of speech, common-word status,
+  JLPT tags, and a Japanese/English example sentence.
 - Select romaji and press **Alt+J** (or use the right-click action) to normalize
   readings automatically—for example, `oshiroi` → `おしろい` → `白粉`.
 - Save the surrounding sentence, page title, URL, and dictionary result as one card.
@@ -22,12 +23,16 @@ reading, usage, or false-friend traps.
 - Press **Alt+Shift+J** anywhere to capture the visible tab, crop Japanese text,
   and recognize it locally—even in PDFs, images, manga, Instagram, and video.
 - Save the cropped source image with its contextual flashcard.
-- Review due cards with Again, Hard, Good, and Easy scheduling.
+- Organize a permanent searchable card library into decks; edit, suspend, copy,
+  move, or archive cards while preserving source encounters and review history.
+- Review due cards with Again, Hard, Good, and Easy scheduling, with an optional
+  review-only dark mode.
 - Track due cards, retention, today's reviews, daily goal, and exam countdown.
-- Change the exam date and daily goal; export or restore a local JSON backup.
+- Change the exam date and daily goal; download manual or optional weekly JSON backups.
 
 All study data stays in the browser. Dictionary terms are requested from
-Jisho's public search endpoint; no sentence context is sent.
+Jisho's public search endpoint and example searches from Tatoeba's API; no
+captured sentence context is sent.
 
 ## Install from source
 
@@ -57,6 +62,10 @@ The text layer follows PDF.js's official viewer scaling, marked-content, and
 selection rules so highlight hitboxes align with the rendered glyphs.
 Use **Ctrl+mouse-wheel** to change the reader's top-right zoom level without
 triggering a separate Chrome page zoom.
+
+The reader also has **Select**, **Draw**, and **Text** modes. Annotations remain
+aligned while zooming and are kept for the current reader session. Switch back
+to Select before highlighting text for lookup.
 
 When the active tab is already displaying a direct PDF URL, the popup offers
 **Open this PDF in N2 Companion**. The extension requests access only to that
@@ -114,6 +123,9 @@ The MVP uses Jisho's publicly accessible JSON search endpoint. It is not a
 documented compatibility guarantee, so a later offline version should index
 [JMdict](https://www.edrdg.org/wiki/index.php/JMdict-EDICT_Dictionary_Project)
 directly and comply with its attribution requirements.
+
+Example sentences come from [Tatoeba](https://tatoeba.org/) through its public
+API. Each saved example retains its sentence link and reported license.
 
 ## License
 

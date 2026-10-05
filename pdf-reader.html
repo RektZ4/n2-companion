@@ -13,6 +13,7 @@
       <span id="pdfStatus">Choose a PDF to begin</span>
       <label class="secondary pdf-file-label">Open PDF<input id="pdfFile" type="file" accept="application/pdf,.pdf" hidden></label>
       <label>Zoom <select id="pdfZoom"><option value="0.5">50%</option><option value="0.75">75%</option><option value="1">100%</option><option value="1.25">125%</option><option value="1.5" selected>150%</option><option value="1.75">175%</option><option value="2">200%</option><option value="2.5">250%</option><option value="3">300%</option></select></label>
+      <div class="annotation-tools" aria-label="PDF annotation tools"><button data-annotation="select" class="secondary active">Select</button><button data-annotation="draw" class="secondary">Draw</button><button data-annotation="text" class="secondary">Text</button><button id="clearAnnotations" class="secondary">Clear marks</button></div>
     </div>
   </header>
   <main id="pdfDropZone" class="pdf-workspace">

@@ -4,10 +4,11 @@ document.querySelector("#examDate").value = settings.examDate;
 document.querySelector("#dailyGoal").value = settings.dailyGoal;
 document.querySelector("#chineseMode").checked = settings.chineseBackgroundMode;
 document.querySelector("#readingFirst").checked = settings.showReadingFirst;
+document.querySelector("#automaticBackups").checked = settings.automaticBackups;
 
 document.querySelector("#form").addEventListener("submit", async (event) => {
   event.preventDefault();
-  await saveSettings({ examDate: document.querySelector("#examDate").value, dailyGoal: Number(document.querySelector("#dailyGoal").value), chineseBackgroundMode: document.querySelector("#chineseMode").checked, showReadingFirst: document.querySelector("#readingFirst").checked });
+  await saveSettings({ examDate: document.querySelector("#examDate").value, dailyGoal: Number(document.querySelector("#dailyGoal").value), chineseBackgroundMode: document.querySelector("#chineseMode").checked, showReadingFirst: document.querySelector("#readingFirst").checked, automaticBackups: document.querySelector("#automaticBackups").checked });
   const notice = document.querySelector("#notice"); notice.classList.add("show"); setTimeout(() => notice.classList.remove("show"), 1800);
 });
 

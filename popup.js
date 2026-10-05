@@ -1,14 +1,16 @@
-import { getCards, getSettings } from "./lib/storage.js";
+import { getCards, getDecks, getSettings } from "./lib/storage.js";
 import { calculateAccuracy, isDue } from "./lib/scheduler.js";
 
 const cards = await getCards();
 const settings = await getSettings();
+const decks = await getDecks();
 const now = Date.now();
 const history = cards.flatMap((card) => card.reviewHistory || []);
 const today = new Date().toISOString().slice(0, 10);
 const todayReviews = history.filter((review) => new Date(review.reviewedAt).toISOString().slice(0, 10) === today).length;
 const days = Math.max(0, Math.ceil((new Date(`${settings.examDate}T00:00:00`).getTime() - now) / 86_400_000));
-const due = cards.filter((card) => isDue(card, now)).length;
+const archivedDecks = new Set(decks.filter((deck) => deck.archived).map((deck) => deck.id));
+const due = cards.filter((card) => !card.suspended && !archivedDecks.has(card.deckId) && isDue(card, now)).length;
 
 document.querySelector("#days").textContent = days;
 document.querySelector("#examDate").textContent = new Date(`${settings.examDate}T00:00:00`).toLocaleDateString(undefined, { day: "numeric", month: "short" });
@@ -32,6 +34,7 @@ for (const card of cards.slice(0, 4)) {
 }
 
 document.querySelector("#review").addEventListener("click", () => chrome.tabs.create({ url: chrome.runtime.getURL("review.html") }));
+document.querySelector("#library").addEventListener("click", () => chrome.tabs.create({ url: chrome.runtime.getURL("library.html") }));
 document.querySelector("#settings").addEventListener("click", () => chrome.runtime.openOptionsPage());
 document.querySelector("#pdfReader").addEventListener("click", () => chrome.tabs.create({ url: chrome.runtime.getURL("pdf-reader.html") }));
 

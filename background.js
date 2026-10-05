@@ -1,10 +1,12 @@
 import { cleanSelection } from "./lib/japanese.js";
-import { getSettings, saveCard } from "./lib/storage.js";
+import { exportData, getSettings, saveCard, saveSettings } from "./lib/storage.js";
 import { getChineseBackgroundCue } from "./lib/cognates.js";
 import { buildLookupQueries } from "./lib/lookup-query.js";
+import { segmentFurigana } from "./lib/furigana.js";
 
 const MENU_ID = "n2-companion-lookup";
 const lookupCache = new Map();
+const exampleCache = new Map();
 
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.removeAll(() => chrome.contextMenus.create({
@@ -69,11 +71,33 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     return true;
   }
   if (message.type === "N2_SAVE_CARD") {
-    saveCard(message.card).then((result) => sendResponse({ ok: true, ...result })).catch((error) => sendResponse({ ok: false, error: error.message }));
+    saveCard(message.card).then(async (result) => {
+      await maybeAutomaticBackup();
+      sendResponse({ ok: true, ...result });
+    }).catch((error) => sendResponse({ ok: false, error: error.message }));
+    return true;
+  }
+  if (message.type === "N2_DOWNLOAD_BACKUP") {
+    downloadBackup(Boolean(message.automatic)).then(() => sendResponse({ ok: true })).catch((error) => sendResponse({ ok: false, error: error.message }));
     return true;
   }
   return false;
 });
+
+async function maybeAutomaticBackup() {
+  const settings = await getSettings();
+  const week = 7 * 86_400_000;
+  if (!settings.automaticBackups || (settings.lastAutoBackupAt && Date.now() - settings.lastAutoBackupAt < week)) return;
+  await downloadBackup(true);
+}
+
+async function downloadBackup(automatic = false) {
+  const data = await exportData();
+  const day = new Date().toISOString().slice(0, 10);
+  const url = `data:application/json;charset=utf-8,${encodeURIComponent(JSON.stringify(data, null, 2))}`;
+  await chrome.downloads.download({ url, filename: `N2-Companion-Backups/n2-companion-${automatic ? "automatic-" : ""}${day}.json`, saveAs: !automatic, conflictAction: "uniquify" });
+  if (automatic) await saveSettings({ lastAutoBackupAt: Date.now() });
+}
 
 async function lookup(rawText) {
   const text = cleanSelection(rawText);
@@ -98,14 +122,33 @@ async function lookup(rawText) {
     reading: item.japanese?.[0]?.reading || "",
     jlpt: item.jlpt || [],
     common: Boolean(item.is_common),
+    furigana: segmentFurigana(item.japanese?.[0]?.word || item.slug, item.japanese?.[0]?.reading || ""),
     chineseCue: settings.chineseBackgroundMode ? getChineseBackgroundCue(item.japanese?.[0]?.word || item.slug) : "",
     senses: (item.senses || []).slice(0, 4).map((sense) => ({
       meanings: sense.english_definitions || [],
       partsOfSpeech: sense.parts_of_speech || []
     }))
   }));
+  await Promise.all(entries.map(async (entry) => { entry.example = await lookupExample(entry.term); }));
   const result = { entries, normalizedText };
   lookupCache.set(cacheKey, result);
   if (lookupCache.size > 100) lookupCache.delete(lookupCache.keys().next().value);
   return result;
+}
+
+async function lookupExample(term) {
+  if (exampleCache.has(term)) return exampleCache.get(term);
+  try {
+    const params = new URLSearchParams({ lang: "jpn", q: term, showtrans: "all", sort: "relevance", limit: "1" });
+    const response = await fetch(`https://api.tatoeba.org/v1/sentences?${params}`);
+    if (!response.ok) return null;
+    const sentence = (await response.json()).data?.[0];
+    if (!sentence) return null;
+    const english = sentence.translations?.find((item) => item.lang === "eng");
+    const example = { japanese: sentence.text, english: english?.text || "", id: sentence.id, license: sentence.license || "", sourceUrl: `https://tatoeba.org/en/sentences/show/${sentence.id}` };
+    exampleCache.set(term, example);
+    return example;
+  } catch {
+    return null;
+  }
 }

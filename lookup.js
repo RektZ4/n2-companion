@@ -1,3 +1,5 @@
+import { appendFurigana } from "./lib/render.js";
+
 const params = new URLSearchParams(location.search);
 const selected = params.get("text") || "";
 const sourceUrl = params.get("sourceUrl") || "";
@@ -17,11 +19,12 @@ if (!response?.ok) {
     const partsOfSpeech = [...new Set(entry.senses.flatMap((sense) => sense.partsOfSpeech))].slice(0, 3);
     const article = document.createElement("article");
     article.className = "lookup-card";
-    article.innerHTML = `<h2><span class="word"></span> <small class="reading-inline"></small></h2><p class="meta"></p><p class="definition"></p><p class="pdf-cue" hidden></p><button class="primary">Save contextual card</button>`;
-    article.querySelector(".word").textContent = entry.term;
-    article.querySelector(".reading-inline").textContent = entry.reading ? `【${entry.reading}】` : "";
+    article.innerHTML = `<h2><span class="word"></span> <small class="reading-inline"></small></h2><p class="meta"></p><p class="definition"></p><p class="example" hidden></p><p class="pdf-cue" hidden></p><button class="primary">Save contextual card</button>`;
+    appendFurigana(article.querySelector(".word"), entry.furigana, entry.term);
+    article.querySelector(".reading-inline").textContent = entry.furigana?.length ? "" : (entry.reading ? `【${entry.reading}】` : "");
     article.querySelector(".meta").textContent = [entry.jlpt.join(" · ").toUpperCase(), ...partsOfSpeech].filter(Boolean).join(" · ");
     article.querySelector(".definition").textContent = meanings.join("; ");
+    const example = article.querySelector(".example"); if (entry.example) { example.textContent = `${entry.example.japanese} — ${entry.example.english}`; example.hidden = false; }
     const cue = article.querySelector(".pdf-cue");
     if (entry.chineseCue) { cue.textContent = entry.chineseCue; cue.hidden = false; }
     article.querySelector("button").addEventListener("click", async (event) => {
@@ -29,9 +32,9 @@ if (!response?.ok) {
         term: entry.term, reading: entry.reading, meanings, partsOfSpeech,
         context: selected, sourceUrl, sourceTitle, sourceType: "pdf",
         tags: entry.jlpt.length ? entry.jlpt.map((tag) => tag.toUpperCase()) : ["N2"],
-        notes: entry.chineseCue || ""
+        notes: entry.chineseCue || "", furigana: entry.furigana, example: entry.example
       }});
-      event.currentTarget.textContent = result?.duplicate ? "Already saved" : "Saved for review ✓";
+      event.currentTarget.textContent = result?.duplicate ? "Added another encounter ✓" : "Saved for review ✓";
       event.currentTarget.disabled = true;
     });
     document.querySelector("#entries").appendChild(article);

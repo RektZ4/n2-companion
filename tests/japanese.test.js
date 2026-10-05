@@ -4,6 +4,7 @@ import { cleanContext, cleanSelection, containsJapanese, hiraganaToKatakana, isS
 import { getChineseBackgroundCue } from "../lib/cognates.js";
 import { buildLookupQueries } from "../lib/lookup-query.js";
 import { errorMessage } from "../lib/errors.js";
+import { segmentFurigana } from "../lib/furigana.js";
 
 test("detects kana and kanji but not English", () => {
   assert.equal(containsJapanese("日本語"), true);
@@ -20,4 +21,8 @@ test("leaves ordinary incomplete English as an English query", () => assert.deep
 test("shows Error messages and plain-text worker failures", () => {
   assert.equal(errorMessage(new Error("worker failed")), "worker failed");
   assert.equal(errorMessage("worker blocked"), "worker blocked");
+});
+test("aligns kana around kanji without inventing character readings", () => {
+  assert.deepEqual(segmentFurigana("食べる", "たべる"), [{ text: "食", reading: "た" }, { text: "べる", reading: "" }]);
+  assert.deepEqual(segmentFurigana("小麦粉", "こむぎこ"), [{ text: "小麦粉", reading: "こむぎこ" }]);
 });
