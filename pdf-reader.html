@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>PDF Reader · N2 Companion</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="pdf-reader-body">
+  <header class="pdf-toolbar">
+    <div><p class="eyebrow">N2 COMPANION</p><strong>PDF Reader</strong></div>
+    <div class="pdf-tools">
+      <span id="pdfStatus">Choose a PDF to begin</span>
+      <label class="secondary pdf-file-label">Open PDF<input id="pdfFile" type="file" accept="application/pdf,.pdf" hidden></label>
+      <label>Zoom <select id="pdfZoom"><option value="1">100%</option><option value="1.25">125%</option><option value="1.5" selected>150%</option><option value="2">200%</option></select></label>
+    </div>
+  </header>
+  <main id="pdfDropZone" class="pdf-workspace">
+    <section id="pdfEmpty" class="pdf-empty">
+      <div class="pdf-empty-icon">PDF</div>
+      <h1>Read Japanese PDFs without leaving your study flow</h1>
+      <p>Drop a PDF here or open one from your computer. Select Japanese text and click <b>辞</b>, or press <b>Alt+J</b>.</p>
+      <label class="primary pdf-open-main">Choose a PDF<input type="file" accept="application/pdf,.pdf" hidden></label>
+    </section>
+    <div id="pdfPages" class="pdf-pages"></div>
+  </main>
+  <script src="content.js"></script>
+  <script type="module" src="pdf-reader.js"></script>
+</body>
+</html>

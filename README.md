@@ -17,6 +17,8 @@ reading, usage, or false-friend traps.
 - Save the surrounding sentence, page title, URL, and dictionary result as one card.
 - Warn about a curated set of common Japanese–Chinese false friends.
 - Select text in Chrome's PDF viewer, right-click, and open an automatic lookup window.
+- Open local PDFs in the built-in PDF.js reader for normal selectable-text
+  lookup with the red **辞** button or **Alt+J**.
 - Press **Alt+Shift+J** anywhere to capture the visible tab, crop Japanese text,
   and recognize it locally—even in PDFs, images, manga, Instagram, and video.
 - Save the cropped source image with its contextual flashcard.
@@ -42,6 +44,14 @@ application, change it at `chrome://extensions/shortcuts`.
 Chrome does not inject extensions into already-open tabs. Refresh existing tabs
 once after installation. Browser-internal pages such as `chrome://` cannot be
 modified by extensions.
+
+### Custom PDF reader
+
+Open the extension popup and choose **Open custom PDF reader**, then select or
+drag in a local PDF. PDF.js renders each page with a selectable text layer, so
+highlighted Japanese uses the same red **辞** button as a normal website.
+**Alt+J** also looks up the current selection. Image-only pages remain available
+to **Alt+Shift+J** screenshot OCR.
 
 ## PDFs, images, and video
 

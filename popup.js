@@ -33,3 +33,4 @@ for (const card of cards.slice(0, 4)) {
 
 document.querySelector("#review").addEventListener("click", () => chrome.tabs.create({ url: chrome.runtime.getURL("review.html") }));
 document.querySelector("#settings").addEventListener("click", () => chrome.runtime.openOptionsPage());
+document.querySelector("#pdfReader").addEventListener("click", () => chrome.tabs.create({ url: chrome.runtime.getURL("pdf-reader.html") }));

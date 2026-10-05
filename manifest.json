@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "N2 Companion",
-  "version": "0.2.3",
+  "version": "0.3.0",
   "description": "Turn Japanese encountered online into contextual, reading-first JLPT flashcards.",
   "permissions": ["storage", "unlimitedStorage", "contextMenus", "activeTab"],
   "host_permissions": ["https://jisho.org/*"],

@@ -37,7 +37,11 @@ chrome.commands.onCommand.addListener(async (command) => {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!tab?.id) return;
   if (command === "lookup-selection") {
-    chrome.tabs.sendMessage(tab.id, { type: "N2_LOOKUP_CURRENT_SELECTION" }).catch(() => {});
+    if (tab.url?.startsWith(chrome.runtime.getURL("pdf-reader.html"))) {
+      chrome.runtime.sendMessage({ type: "N2_LOOKUP_CURRENT_SELECTION" }).catch(() => {});
+    } else {
+      chrome.tabs.sendMessage(tab.id, { type: "N2_LOOKUP_CURRENT_SELECTION" }).catch(() => {});
+    }
   }
   if (command === "screenshot-ocr") await startOcrCapture(tab);
 });
