@@ -1,4 +1,5 @@
 import Tesseract from "./vendor/tesseract/tesseract.esm.min.js";
+import { errorMessage } from "./lib/errors.js";
 
 const { createWorker } = Tesseract;
 
@@ -21,6 +22,7 @@ const lookupButton = document.querySelector("#lookup");
 try {
   const worker = await createWorker("jpn", 1, {
     workerPath: chrome.runtime.getURL("vendor/tesseract/worker.min.js"),
+    workerBlobURL: false,
     corePath: chrome.runtime.getURL("vendor/tesseract"),
     langPath: chrome.runtime.getURL("vendor/tesseract/lang"),
     logger: ({ status, progress: value }) => { progress.textContent = `${status} ${Math.round((value || 0) * 100)}%`; }
@@ -32,7 +34,7 @@ try {
   progress.textContent = `OCR complete · ${Math.round(data.confidence)}% confidence`;
 } catch (error) {
   progress.textContent = "OCR failed";
-  recognized.value = `OCR error: ${error.message}`;
+  recognized.value = `OCR error: ${errorMessage(error)}`;
 }
 
 recognized.addEventListener("input", () => { lookupButton.disabled = !recognized.value.trim(); });

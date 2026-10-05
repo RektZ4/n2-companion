@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { cleanContext, cleanSelection, containsJapanese, hiraganaToKatakana, isSameReading } from "../lib/japanese.js";
 import { getChineseBackgroundCue } from "../lib/cognates.js";
 import { buildLookupQueries } from "../lib/lookup-query.js";
+import { errorMessage } from "../lib/errors.js";
 
 test("detects kana and kanji but not English", () => {
   assert.equal(containsJapanese("日本語"), true);
@@ -16,3 +17,7 @@ test("provides a curated Chinese false-friend warning", () => assert.match(getCh
 test("converts complete romaji to hiragana before lookup", () => assert.deepEqual(buildLookupQueries("oshiroi"), ["おしろい", "oshiroi"]));
 test("preserves Japanese queries", () => assert.deepEqual(buildLookupQueries("白粉"), ["白粉"]));
 test("leaves ordinary incomplete English as an English query", () => assert.deepEqual(buildLookupQueries("book"), ["book"]));
+test("shows Error messages and plain-text worker failures", () => {
+  assert.equal(errorMessage(new Error("worker failed")), "worker failed");
+  assert.equal(errorMessage("worker blocked"), "worker blocked");
+});

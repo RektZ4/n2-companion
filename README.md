@@ -63,6 +63,8 @@ This MVP deliberately has no framework, bundler, server, or runtime dependency:
 - plain HTML/CSS modules for the dashboard, reviews, and settings
 
 The small codebase is intentional: it is fast to load and easy to inspect.
+The packaged OCR worker is loaded directly rather than through a `blob:` URL so
+it remains compatible with Manifest V3's extension content security policy.
 
 ## Development
 
