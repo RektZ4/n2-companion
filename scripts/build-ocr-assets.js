@@ -17,6 +17,8 @@ const files = [
   ["node_modules/tesseract.js-core/tesseract-core.wasm.js", "tesseract-core.wasm.js"],
   ["node_modules/tesseract.js-core/tesseract-core-simd.wasm.js", "tesseract-core-simd.wasm.js"],
   ["node_modules/tesseract.js-core/tesseract-core-simd-lstm.wasm.js", "tesseract-core-simd-lstm.wasm.js"],
+  ["node_modules/tesseract.js-core/tesseract-core-relaxedsimd.wasm.js", "tesseract-core-relaxedsimd.wasm.js"],
+  ["node_modules/tesseract.js-core/tesseract-core-relaxedsimd-lstm.wasm.js", "tesseract-core-relaxedsimd-lstm.wasm.js"],
   ["node_modules/tesseract.js-core/LICENSE", "TESSERACT_CORE_LICENSE"],
   ["node_modules/@tesseract.js-data/jpn/4.0.0_best_int/jpn.traineddata.gz", "lang/jpn.traineddata.gz"],
   ["node_modules/@tesseract.js-data/jpn/README.md", "JPN_DATA_README.md"]

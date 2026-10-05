@@ -65,6 +65,8 @@ This MVP deliberately has no framework, bundler, server, or runtime dependency:
 The small codebase is intentional: it is fast to load and easy to inspect.
 The packaged OCR worker is loaded directly rather than through a `blob:` URL so
 it remains compatible with Manifest V3's extension content security policy.
+All WebAssembly core variants selected by Tesseract.js—including relaxed SIMD
+variants used by newer Chromium builds—are bundled for offline execution.
 
 ## Development
 
