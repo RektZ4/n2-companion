@@ -39,4 +39,13 @@ if (!response?.ok) {
     });
     document.querySelector("#entries").appendChild(article);
   }
+  loadTopExample(response.entries[0], document.querySelector("#entries .lookup-card .example"));
+}
+
+async function loadTopExample(entry, element) {
+  const response = await chrome.runtime.sendMessage({ type: "N2_EXAMPLE_LOOKUP", term: entry.term }).catch(() => null);
+  if (!response?.example || !element?.isConnected) return;
+  entry.example = response.example;
+  element.textContent = `${entry.example.japanese} — ${entry.example.english}`;
+  element.hidden = false;
 }

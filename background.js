@@ -70,6 +70,10 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     lookup(message.text).then((result) => sendResponse({ ok: true, ...result })).catch((error) => sendResponse({ ok: false, error: error.message }));
     return true;
   }
+  if (message.type === "N2_EXAMPLE_LOOKUP") {
+    lookupExample(cleanSelection(message.term)).then((example) => sendResponse({ ok: true, example })).catch(() => sendResponse({ ok: true, example: null }));
+    return true;
+  }
   if (message.type === "N2_SAVE_CARD") {
     saveCard(message.card).then(async (result) => {
       await maybeAutomaticBackup();
@@ -110,7 +114,7 @@ async function lookup(rawText) {
   let payload = { data: [] };
   let normalizedText = text;
   for (const query of queries) {
-    const response = await fetch(`https://jisho.org/api/v1/search/words?keyword=${encodeURIComponent(query)}`);
+    const response = await fetchWithTimeout(`https://jisho.org/api/v1/search/words?keyword=${encodeURIComponent(query)}`, 8000);
     if (!response.ok) throw new Error(`Dictionary request failed (${response.status}).`);
     payload = await response.json();
     normalizedText = query;
@@ -129,7 +133,6 @@ async function lookup(rawText) {
       partsOfSpeech: sense.parts_of_speech || []
     }))
   }));
-  await Promise.all(entries.map(async (entry) => { entry.example = await lookupExample(entry.term); }));
   const result = { entries, normalizedText };
   lookupCache.set(cacheKey, result);
   if (lookupCache.size > 100) lookupCache.delete(lookupCache.keys().next().value);
@@ -137,10 +140,13 @@ async function lookup(rawText) {
 }
 
 async function lookupExample(term) {
+  if (!term) return null;
   if (exampleCache.has(term)) return exampleCache.get(term);
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 2500);
   try {
     const params = new URLSearchParams({ lang: "jpn", q: term, showtrans: "all", sort: "relevance", limit: "1" });
-    const response = await fetch(`https://api.tatoeba.org/v1/sentences?${params}`);
+    const response = await fetch(`https://api.tatoeba.org/v1/sentences?${params}`, { signal: controller.signal });
     if (!response.ok) return null;
     const sentence = (await response.json()).data?.[0];
     if (!sentence) return null;
@@ -150,5 +156,20 @@ async function lookupExample(term) {
     return example;
   } catch {
     return null;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function fetchWithTimeout(url, milliseconds) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), milliseconds);
+  try {
+    return await fetch(url, { signal: controller.signal });
+  } catch (error) {
+    if (error?.name === "AbortError") throw new Error("Dictionary request timed out. Please try again.");
+    throw error;
+  } finally {
+    clearTimeout(timeout);
   }
 }

@@ -119,6 +119,16 @@
       });
       panel.appendChild(section);
     });
+    loadTopExample(response.entries[0], panel.querySelector(".entry .example"));
+  }
+
+  async function loadTopExample(entry, element) {
+    const response = await chrome.runtime.sendMessage({ type: "N2_EXAMPLE_LOOKUP", term: entry.term }).catch(() => null);
+    if (!response?.example || !element?.isConnected) return;
+    entry.example = response.example;
+    element.querySelector("span").textContent = entry.example.japanese;
+    element.querySelector("small").textContent = entry.example.english;
+    element.hidden = false;
   }
 
   function removeHost() {
