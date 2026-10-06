@@ -22,7 +22,7 @@ if (!response?.ok) {
     article.innerHTML = `<h2><span class="word"></span> <small class="reading-inline"></small></h2><p class="meta"></p><p class="definition"></p><p class="example" hidden></p><p class="pdf-cue" hidden></p><button class="primary">Save contextual card</button>`;
     appendFurigana(article.querySelector(".word"), entry.furigana, entry.term);
     article.querySelector(".reading-inline").textContent = entry.furigana?.length ? "" : (entry.reading ? `【${entry.reading}】` : "");
-    article.querySelector(".meta").textContent = [entry.jlpt.join(" · ").toUpperCase(), ...partsOfSpeech].filter(Boolean).join(" · ");
+    article.querySelector(".meta").textContent = [entry.source, entry.jlpt.join(" · ").toUpperCase(), ...partsOfSpeech].filter(Boolean).join(" · ");
     article.querySelector(".definition").textContent = meanings.join("; ");
     const example = article.querySelector(".example"); if (entry.example) { example.textContent = `${entry.example.japanese} — ${entry.example.english}`; example.hidden = false; }
     const cue = article.querySelector(".pdf-cue");

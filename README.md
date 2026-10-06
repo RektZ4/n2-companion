@@ -13,6 +13,7 @@ reading, usage, or false-friend traps.
 - Use the **Alt+J** shortcut or the right-click lookup action.
 - Look up readings, furigana, definitions, parts of speech, common-word status,
   JLPT tags, and a Japanese/English example sentence.
+- Fall back automatically to Jotoba when Jisho has no word result or is unavailable.
 - Select romaji and press **Alt+J** (or use the right-click action) to normalize
   readings automatically—for example, `oshiroi` → `おしろい` → `白粉`.
 - Save the surrounding sentence, page title, URL, and dictionary result as one card.
@@ -80,6 +81,8 @@ screenshots, and burned-in video subtitles, press **Alt+Shift+J**, drag around
 the text in the captured frame, correct the OCR result if necessary, and look
 up the relevant word. OCR runs locally using Tesseract.js and Japanese trained
 data; the first recognition can take longer while the engine initializes.
+Colored, highlighted, and vertical text receives a high-resolution contrast
+pass plus confidence-based retries before the best Japanese result is shown.
 
 ## Architecture
 
@@ -126,6 +129,8 @@ directly and comply with its attribution requirements.
 
 Example sentences come from [Tatoeba](https://tatoeba.org/) through its public
 API. Each saved example retains its sentence link and reported license.
+When Jisho has no result, the extension uses [Jotoba](https://jotoba.de/), whose
+word results are based on JMdict and related EDRDG resources.
 
 ## License
 

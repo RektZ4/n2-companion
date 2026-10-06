@@ -12,8 +12,9 @@ PDFs opened in the custom reader are parsed locally using bundled PDF.js files.
 The PDF document is not uploaded or retained after the reader tab is closed.
 
 Selected terms are sent to Jisho's public word-search endpoint to retrieve
-dictionary entries and to Tatoeba's API to find one example sentence.
-Surrounding sentences and browsing history are not sent to either service.
+dictionary entries, to Jotoba only when Jisho has no result, and to Tatoeba's
+API to find one example sentence. Surrounding sentences and browsing history
+are not sent to these services.
 Source URLs are stored only when the user explicitly saves a card.
 
 Exported JSON backups are created locally and are controlled by the user. If

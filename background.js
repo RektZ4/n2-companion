@@ -112,15 +112,21 @@ async function lookup(rawText) {
   if (lookupCache.has(cacheKey)) return lookupCache.get(cacheKey);
 
   let payload = { data: [] };
+  let jishoError = null;
   let normalizedText = text;
-  for (const query of queries) {
-    const response = await fetchWithTimeout(`https://jisho.org/api/v1/search/words?keyword=${encodeURIComponent(query)}`, 8000);
-    if (!response.ok) throw new Error(`Dictionary request failed (${response.status}).`);
-    payload = await response.json();
-    normalizedText = query;
-    if (payload.data?.length) break;
+  try {
+    for (const query of queries) {
+      const response = await fetchWithTimeout(`https://jisho.org/api/v1/search/words?keyword=${encodeURIComponent(query)}`, 8000);
+      if (!response.ok) throw new Error(`Jisho request failed (${response.status}).`);
+      payload = await response.json();
+      normalizedText = query;
+      if (payload.data?.length) break;
+    }
+  } catch (error) {
+    jishoError = error;
   }
-  const entries = payload.data.slice(0, 5).map((item) => ({
+  let entries = (payload.data || []).slice(0, 5).map((item) => ({
+    source: "Jisho",
     slug: item.slug,
     term: item.japanese?.[0]?.word || item.slug,
     reading: item.japanese?.[0]?.reading || "",
@@ -133,10 +139,47 @@ async function lookup(rawText) {
       partsOfSpeech: sense.parts_of_speech || []
     }))
   }));
+  if (!entries.length) entries = await lookupJotoba(normalizedText || text);
+  if (!entries.length && jishoError) throw jishoError;
   const result = { entries, normalizedText };
   lookupCache.set(cacheKey, result);
   if (lookupCache.size > 100) lookupCache.delete(lookupCache.keys().next().value);
   return result;
+}
+
+async function lookupJotoba(query) {
+  try {
+    const response = await fetchWithTimeout("https://jotoba.de/api/search/words", 6000, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query, language: "English", no_english: false })
+    });
+    if (!response.ok) return [];
+    const payload = await response.json();
+    return (payload.words || []).slice(0, 5).map((word) => {
+      const term = word.reading?.kanji || word.reading?.kana || query;
+      const reading = word.reading?.kana || "";
+      return {
+        source: "Jotoba fallback", slug: term, term, reading, jlpt: [], common: Boolean(word.common),
+        furigana: segmentFurigana(term, reading), chineseCue: "",
+        senses: (word.senses || []).slice(0, 4).map((sense) => ({ meanings: sense.glosses || [], partsOfSpeech: (sense.pos || []).map(formatJotobaPartOfSpeech) }))
+      };
+    });
+  } catch {
+    return [];
+  }
+}
+
+function formatJotobaPartOfSpeech(value) {
+  if (typeof value === "string") return splitCamelCase(value);
+  if (!value || typeof value !== "object") return "";
+  const [name, detail] = Object.entries(value)[0] || [];
+  const suffix = typeof detail === "string" ? detail : Object.keys(detail || {})[0];
+  return `${splitCamelCase(name || "")}${suffix ? ` (${splitCamelCase(suffix)})` : ""}`;
+}
+
+function splitCamelCase(value) {
+  return String(value).replace(/([a-z])([A-Z])/g, "$1 $2");
 }
 
 async function lookupExample(term) {
@@ -161,11 +204,11 @@ async function lookupExample(term) {
   }
 }
 
-async function fetchWithTimeout(url, milliseconds) {
+async function fetchWithTimeout(url, milliseconds, options = {}) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), milliseconds);
   try {
-    return await fetch(url, { signal: controller.signal });
+    return await fetch(url, { ...options, signal: controller.signal });
   } catch (error) {
     if (error?.name === "AbortError") throw new Error("Dictionary request timed out. Please try again.");
     throw error;

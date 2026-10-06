@@ -100,7 +100,7 @@
       section.innerHTML = `<div><span class="word"></span><span class="reading"></span></div><div class="meta"></div><div class="meaning"></div><div class="example" hidden><span></span><small></small></div><div class="cue" hidden></div><button class="save">Save contextual card</button>`;
       renderFurigana(section.querySelector(".word"), entry.furigana, entry.term);
       section.querySelector(".reading").textContent = entry.furigana?.length ? "" : (entry.reading ? `【${entry.reading}】` : "");
-      section.querySelector(".meta").textContent = [entry.jlpt.join(" · ").toUpperCase(), ...parts].filter(Boolean).join(" · ");
+      section.querySelector(".meta").textContent = [entry.source, entry.jlpt.join(" · ").toUpperCase(), ...parts].filter(Boolean).join(" · ");
       section.querySelector(".meaning").textContent = meanings.join("; ");
       const example = section.querySelector(".example");
       if (entry.example) { example.querySelector("span").textContent = entry.example.japanese; example.querySelector("small").textContent = entry.example.english; example.hidden = false; }

@@ -1,8 +1,9 @@
 import Tesseract from "./vendor/tesseract/tesseract.esm.min.js";
 import { errorMessage } from "./lib/errors.js";
 import { appendFurigana } from "./lib/render.js";
+import { bestOcrCandidate, cleanOcrText, scoreOcrCandidate } from "./lib/ocr-quality.js";
 
-const { createWorker } = Tesseract;
+const { createWorker, PSM } = Tesseract;
 
 const params = new URLSearchParams(location.search);
 const id = params.get("id");
@@ -28,14 +29,67 @@ try {
     langPath: chrome.runtime.getURL("vendor/tesseract/lang"),
     logger: ({ status, progress: value }) => { progress.textContent = `${status} ${Math.round((value || 0) * 100)}%`; }
   });
-  const { data } = await worker.recognize(canvas);
+  const enhanced = makeEnhancedCanvas(canvas);
+  const verticalFirst = crop.height > crop.width * 1.25;
+  const candidates = [];
+  await recognizeCandidate(worker, enhanced, verticalFirst ? PSM.SINGLE_BLOCK_VERT_TEXT : PSM.SINGLE_BLOCK, candidates, "enhanced");
+  if (scoreOcrCandidate(candidates[0]) < 105) {
+    await recognizeCandidate(worker, canvas, PSM.SINGLE_BLOCK, candidates, "original");
+    await recognizeCandidate(worker, enhanced, PSM.SINGLE_BLOCK_VERT_TEXT, candidates, "vertical");
+  }
   await worker.terminate();
-  recognized.value = data.text.replace(/\s+/g, " ").trim();
+  const best = bestOcrCandidate(candidates);
+  recognized.value = cleanOcrText(best?.text);
   lookupButton.disabled = !recognized.value;
-  progress.textContent = `OCR complete · ${Math.round(data.confidence)}% confidence`;
+  progress.textContent = `OCR complete · ${Math.round(best?.confidence || 0)}% confidence · ${best?.mode || "automatic"} mode`;
 } catch (error) {
   progress.textContent = "OCR failed";
   recognized.value = `OCR error: ${errorMessage(error)}`;
+}
+
+async function recognizeCandidate(worker, input, pageSegmentationMode, candidates, mode) {
+  await worker.setParameters({ tessedit_pageseg_mode: pageSegmentationMode, preserve_interword_spaces: "1" });
+  const { data } = await worker.recognize(input);
+  candidates.push({ text: data.text, confidence: data.confidence, mode });
+}
+
+function makeEnhancedCanvas(source) {
+  const scale = Math.max(2, Math.min(4, 900 / Math.max(source.width, source.height)));
+  const padding = 18;
+  const output = document.createElement("canvas");
+  output.width = Math.round(source.width * scale) + padding * 2;
+  output.height = Math.round(source.height * scale) + padding * 2;
+  const outputContext = output.getContext("2d", { willReadFrequently: true });
+  outputContext.fillStyle = "white"; outputContext.fillRect(0, 0, output.width, output.height);
+  outputContext.imageSmoothingEnabled = true;
+  outputContext.drawImage(source, padding, padding, output.width - padding * 2, output.height - padding * 2);
+  const imageData = outputContext.getImageData(0, 0, output.width, output.height);
+  const histogram = new Array(256).fill(0);
+  for (let index = 0; index < imageData.data.length; index += 4) {
+    const gray = Math.round(imageData.data[index] * 0.299 + imageData.data[index + 1] * 0.587 + imageData.data[index + 2] * 0.114);
+    imageData.data[index] = gray; histogram[gray] += 1;
+  }
+  const threshold = otsuThreshold(histogram, output.width * output.height);
+  for (let index = 0; index < imageData.data.length; index += 4) {
+    const value = imageData.data[index] < threshold ? 0 : 255;
+    imageData.data[index] = value; imageData.data[index + 1] = value; imageData.data[index + 2] = value; imageData.data[index + 3] = 255;
+  }
+  outputContext.putImageData(imageData, 0, 0);
+  return output;
+}
+
+function otsuThreshold(histogram, total) {
+  let sum = 0; for (let value = 0; value < 256; value += 1) sum += value * histogram[value];
+  let backgroundWeight = 0; let backgroundSum = 0; let maximum = 0; let threshold = 128;
+  for (let value = 0; value < 256; value += 1) {
+    backgroundWeight += histogram[value]; if (!backgroundWeight) continue;
+    const foregroundWeight = total - backgroundWeight; if (!foregroundWeight) break;
+    backgroundSum += value * histogram[value];
+    const difference = backgroundSum / backgroundWeight - (sum - backgroundSum) / foregroundWeight;
+    const variance = backgroundWeight * foregroundWeight * difference * difference;
+    if (variance > maximum) { maximum = variance; threshold = value; }
+  }
+  return threshold;
 }
 
 recognized.addEventListener("input", () => { lookupButton.disabled = !recognized.value.trim(); });
