@@ -24,6 +24,7 @@ const files = [
   ["node_modules/tesseract.js-core/tesseract-core-relaxedsimd-lstm.wasm.js", "tesseract-core-relaxedsimd-lstm.wasm.js"],
   ["node_modules/tesseract.js-core/LICENSE", "TESSERACT_CORE_LICENSE"],
   ["node_modules/@tesseract.js-data/jpn/4.0.0_best_int/jpn.traineddata.gz", "lang/jpn.traineddata.gz"],
+  ["node_modules/@tesseract.js-data/jpn_vert/4.0.0_best_int/jpn_vert.traineddata.gz", "lang/jpn_vert.traineddata.gz"],
   ["node_modules/@tesseract.js-data/jpn/README.md", "JPN_DATA_README.md"]
 ];
 for (const [from, to] of files) await cp(resolve(root, from), resolve(output, to));

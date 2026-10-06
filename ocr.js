@@ -1,9 +1,10 @@
 import Tesseract from "./vendor/tesseract/tesseract.esm.min.js";
 import { errorMessage } from "./lib/errors.js";
 import { appendFurigana } from "./lib/render.js";
-import { bestOcrCandidate, cleanOcrText, scoreOcrCandidate } from "./lib/ocr-quality.js";
+import { cleanOcrText } from "./lib/ocr-quality.js";
+import { runOcrPipeline } from "./lib/ocr-pipeline.js";
 
-const { createWorker, PSM } = Tesseract;
+const { createWorker } = Tesseract;
 
 const params = new URLSearchParams(location.search);
 const id = params.get("id");
@@ -21,75 +22,72 @@ context.drawImage(image, crop.x, crop.y, crop.width, crop.height, 0, 0, crop.wid
 const progress = document.querySelector("#progress");
 const recognized = document.querySelector("#recognized");
 const lookupButton = document.querySelector("#lookup");
-try {
-  const worker = await createWorker("jpn", 1, {
-    workerPath: chrome.runtime.getURL("vendor/tesseract/worker.min.js"),
-    workerBlobURL: false,
-    corePath: chrome.runtime.getURL("vendor/tesseract"),
-    langPath: chrome.runtime.getURL("vendor/tesseract/lang"),
-    logger: ({ status, progress: value }) => { progress.textContent = `${status} ${Math.round((value || 0) * 100)}%`; }
-  });
-  const enhanced = makeEnhancedCanvas(canvas);
-  const verticalFirst = crop.height > crop.width * 1.25;
-  const candidates = [];
-  await recognizeCandidate(worker, enhanced, verticalFirst ? PSM.SINGLE_BLOCK_VERT_TEXT : PSM.SINGLE_BLOCK, candidates, "enhanced");
-  if (scoreOcrCandidate(candidates[0]) < 105) {
-    await recognizeCandidate(worker, canvas, PSM.SINGLE_BLOCK, candidates, "original");
-    await recognizeCandidate(worker, enhanced, PSM.SINGLE_BLOCK_VERT_TEXT, candidates, "vertical");
+const alternatives = document.querySelector("#alternatives");
+let progressLabel = "Preparing OCR";
+
+// One Tesseract worker per model, created on first use. "jpn" reads horizontal
+// text and single glyph columns; "jpn_vert" is the vertical-writing model.
+const workers = new Map();
+function getWorker(model) {
+  if (!workers.has(model)) {
+    workers.set(model, createWorker(model, 1, {
+      workerPath: chrome.runtime.getURL("vendor/tesseract/worker.min.js"),
+      workerBlobURL: false,
+      corePath: chrome.runtime.getURL("vendor/tesseract"),
+      langPath: chrome.runtime.getURL("vendor/tesseract/lang"),
+      logger: ({ status, progress: value }) => { progress.textContent = `${progressLabel} · ${status} ${Math.round((value || 0) * 100)}%`; }
+    }));
   }
-  await worker.terminate();
-  const best = bestOcrCandidate(candidates);
+  return workers.get(model);
+}
+
+const engine = {
+  async recognize(model, image, pageSegmentationMode) {
+    const worker = await getWorker(model);
+    await worker.setParameters({ tessedit_pageseg_mode: String(pageSegmentationMode), preserve_interword_spaces: "1" });
+    const input = document.createElement("canvas"); input.width = image.width; input.height = image.height;
+    input.getContext("2d").putImageData(new ImageData(image.data, image.width, image.height), 0, 0);
+    const { data } = await worker.recognize(input, {}, { blocks: true });
+    const symbols = (data.blocks || []).flatMap((block) => block.paragraphs.flatMap((paragraph) => paragraph.lines.flatMap((line) => line.words.flatMap((word) => word.symbols))));
+    return { text: data.text, confidence: data.confidence, symbols };
+  }
+};
+
+try {
+  const source = context.getImageData(0, 0, canvas.width, canvas.height);
+  const ranked = await runOcrPipeline(source, engine, {
+    onStatus: ({ variant, model, column, columns }) => { progressLabel = column ? `Column ${column}/${columns}` : `Reading (${variant}, ${model === "jpn_vert" ? "vertical" : "horizontal"})`; progress.textContent = `${progressLabel}…`; }
+  });
+  const best = ranked[0];
   recognized.value = cleanOcrText(best?.text);
   lookupButton.disabled = !recognized.value;
-  progress.textContent = `OCR complete · ${Math.round(best?.confidence || 0)}% confidence · ${best?.mode || "automatic"} mode`;
+  showAlternatives(ranked, recognized.value);
+  progress.textContent = `OCR complete · ${Math.round(best?.confidence || 0)}% confidence · ${best?.mode || "automatic"}`;
 } catch (error) {
   progress.textContent = "OCR failed";
   recognized.value = `OCR error: ${errorMessage(error)}`;
+} finally {
+  for (const pending of workers.values()) pending.then((worker) => worker.terminate()).catch(() => {});
 }
 
-async function recognizeCandidate(worker, input, pageSegmentationMode, candidates, mode) {
-  await worker.setParameters({ tessedit_pageseg_mode: pageSegmentationMode, preserve_interword_spaces: "1" });
-  const { data } = await worker.recognize(input);
-  candidates.push({ text: data.text, confidence: data.confidence, mode });
-}
-
-function makeEnhancedCanvas(source) {
-  const scale = Math.max(2, Math.min(4, 900 / Math.max(source.width, source.height)));
-  const padding = 18;
-  const output = document.createElement("canvas");
-  output.width = Math.round(source.width * scale) + padding * 2;
-  output.height = Math.round(source.height * scale) + padding * 2;
-  const outputContext = output.getContext("2d", { willReadFrequently: true });
-  outputContext.fillStyle = "white"; outputContext.fillRect(0, 0, output.width, output.height);
-  outputContext.imageSmoothingEnabled = true;
-  outputContext.drawImage(source, padding, padding, output.width - padding * 2, output.height - padding * 2);
-  const imageData = outputContext.getImageData(0, 0, output.width, output.height);
-  const histogram = new Array(256).fill(0);
-  for (let index = 0; index < imageData.data.length; index += 4) {
-    const gray = Math.round(imageData.data[index] * 0.299 + imageData.data[index + 1] * 0.587 + imageData.data[index + 2] * 0.114);
-    imageData.data[index] = gray; histogram[gray] += 1;
+// Offer the other distinct readings so a near-miss can be fixed in one click.
+function showAlternatives(ranked, chosen) {
+  const seen = new Set([chosen]); const options = [];
+  for (const candidate of ranked) {
+    const text = cleanOcrText(candidate.text);
+    if (!text || seen.has(text) || !/[\u3040-\u30ff\u3400-\u9fff]/u.test(text)) continue;
+    seen.add(text); options.push(text);
+    if (options.length === 3) break;
   }
-  const threshold = otsuThreshold(histogram, output.width * output.height);
-  for (let index = 0; index < imageData.data.length; index += 4) {
-    const value = imageData.data[index] < threshold ? 0 : 255;
-    imageData.data[index] = value; imageData.data[index + 1] = value; imageData.data[index + 2] = value; imageData.data[index + 3] = 255;
+  alternatives.replaceChildren();
+  alternatives.hidden = !options.length;
+  if (!options.length) return;
+  const label = document.createElement("span"); label.textContent = "Other readings:"; alternatives.append(label);
+  for (const text of options) {
+    const chip = document.createElement("button"); chip.type = "button"; chip.className = "chip"; chip.textContent = text;
+    chip.addEventListener("click", () => { recognized.value = text; lookupButton.disabled = false; });
+    alternatives.append(chip);
   }
-  outputContext.putImageData(imageData, 0, 0);
-  return output;
-}
-
-function otsuThreshold(histogram, total) {
-  let sum = 0; for (let value = 0; value < 256; value += 1) sum += value * histogram[value];
-  let backgroundWeight = 0; let backgroundSum = 0; let maximum = 0; let threshold = 128;
-  for (let value = 0; value < 256; value += 1) {
-    backgroundWeight += histogram[value]; if (!backgroundWeight) continue;
-    const foregroundWeight = total - backgroundWeight; if (!foregroundWeight) break;
-    backgroundSum += value * histogram[value];
-    const difference = backgroundSum / backgroundWeight - (sum - backgroundSum) / foregroundWeight;
-    const variance = backgroundWeight * foregroundWeight * difference * difference;
-    if (variance > maximum) { maximum = variance; threshold = value; }
-  }
-  return threshold;
 }
 
 recognized.addEventListener("input", () => { lookupButton.disabled = !recognized.value.trim(); });

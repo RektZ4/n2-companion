@@ -15,8 +15,10 @@
   "license": "MIT",
   "devDependencies": {
     "@tesseract.js-data/jpn": "^1.0.0",
+    "@tesseract.js-data/jpn_vert": "^1.0.0",
     "esbuild": "^0.28.2",
     "pdfjs-dist": "^6.4.299",
+    "pngjs": "^7.0.0",
     "tesseract.js": "^7.0.0",
     "wanakana": "^5.3.1"
   }

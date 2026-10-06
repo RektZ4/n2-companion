@@ -81,8 +81,19 @@ screenshots, and burned-in video subtitles, press **Alt+Shift+J**, drag around
 the text in the captured frame, correct the OCR result if necessary, and look
 up the relevant word. OCR runs locally using Tesseract.js and Japanese trained
 data; the first recognition can take longer while the engine initializes.
-Colored, highlighted, and vertical text receives a high-resolution contrast
-pass plus confidence-based retries before the best Japanese result is shown.
+
+Each capture is read several ways and the readings compete: the crop is cleaned
+up four ways (contrast-stretched grayscale, a two-colour split for coloured text
+and textured backgrounds, and bright-only / dark-only passes for outlined
+captions) and read with both the horizontal `jpn` model and the vertical `jpn_vert`
+model. Readings are scored on per-character confidence, on whether the
+characters follow a real reading path (this rejects vertical-model gibberish on
+horizontal text), and on agreement with the other readings. Crops with several
+vertical columns are split and read right to left. If the best reading is wrong,
+the other distinct readings appear as one-click alternatives under the text box.
+
+Known limit: Tesseract is weak on brush/calligraphic fonts and on text over busy
+photos. Those are best-effort; correct the text box or pick an alternative.
 
 ## Architecture
 

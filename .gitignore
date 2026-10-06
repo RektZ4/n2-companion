@@ -3,3 +3,6 @@ Thumbs.db
 *.zip
 node_modules/
 coverage/
+
+# Tesseract.js writes language data here when run from Node
+/*.traineddata
